@@ -1,6 +1,7 @@
-#include <iostream>
+#include "server_classes.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
+    UDPserver udp = UDPserver(3, 500);
+    udp.Initialize();
+    udp.Listen();
 }
