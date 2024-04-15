@@ -28,7 +28,7 @@ void UDPserver::Initialize() {
 
 
 void UDPserver::Listen() {
-    ThreadPool tp{10};
+    ThreadPool tp{20};
 
     int epoll_fd = epoll_create1(0);
     if (epoll_fd < 0) {
@@ -46,6 +46,7 @@ void UDPserver::Listen() {
     }
 
     struct epoll_event events[1];
+    std::vector<struct sockaddr_in> addresses;
     while (true) {
         int num_events = epoll_wait(epoll_fd, events, 1, 3000); // 5 seconds timeout
 
@@ -58,7 +59,7 @@ void UDPserver::Listen() {
         for (int i = 0; i < num_events; ++i) {
             std::cout <<"Main port"<<std::endl;
             uint8_t buf[1024];
-            struct sockaddr_in client_addr;
+            sockaddr_in client_addr;
             if (!(events[i].events & EPOLLIN))
                 continue;
 
@@ -67,12 +68,14 @@ void UDPserver::Listen() {
             int n = recvfrom(UDPserver::sockFD, buf, 1024,
                              0, (struct sockaddr*)&client_addr, &len);
 
+            addresses.push_back(client_addr);
+
             if (n == -1) {
                 std::cerr << "recvfrom failed. errno: " << errno << '\n';
                 continue;
             }
 
-            tp.AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, retransmissions, timeout));
+            tp.AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, retransmissions, timeout, &addresses));
         }
 
     }
