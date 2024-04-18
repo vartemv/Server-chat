@@ -46,7 +46,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if (new_uf.client.sin_port != udp.client_addr.sin_port) {
+        if (new_uf.client.sin_port != udp.client_addr.sin_port && new_uf.channel == udp.channel_name) {
             udp.send_message(new_uf.buf, new_uf.length);
         }
 
@@ -89,7 +89,7 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             break;
         case 0x04://MSG
             send_confirm(buf);
-            respond_to_message(buf, length, s, synch_var);
+            respond_to_message(buf, length, s, synch_var, this->channel_name);
             break;
         case 0xFF://BYE
             std::cout << "Got bye" << std::endl;
@@ -120,11 +120,11 @@ void UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<Us
         send_reply(buf, success, true);
 
         std::stringstream ss;
-        ss << this->display_name << " has joined ch.general.";
+        ss << this->display_name << " has joined general.";
         std::string message = ss.str();
         uint8_t buf_message[1024];
         int length = this->create_message(buf_message, message, false);
-        this->respond_to_message(buf_message, length, s, synch_var);
+        this->respond_to_message(buf_message, length, s, synch_var, this->channel_name);
 
         this->auth = true;
     } else {
@@ -136,41 +136,50 @@ void UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<Us
 void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var) {
     bool valid = true;
 
-    if(!this->buffer_validation(buf, message_length,3,2))
+    if (!this->buffer_validation(buf, message_length, 3, 2))
         valid = false;
 
-    if(valid){
+    if (valid) {
         this->change_display_name(buf, true);
         std::string success = "Join is succesful";
         send_reply(buf, success, true);
 
         std::stringstream ss;
-        ss << this->display_name << " has left"<< this->channel_name;
+        ss << this->display_name << " has left " << this->channel_name << ".";
         std::string message = ss.str();
         uint8_t buf_message[1024];
         int length = this->create_message(buf_message, message, false);
-        this->respond_to_message(buf_message, length, s, synch_var);
+        std::cout << this->channel_name << std::endl;
+        this->respond_to_message(buf_message, length, s, synch_var, this->channel_name);
 
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
+        memset(buf_message, 0, 1024);
+        //uint8_t buf_m[1024];
+        std::stringstream joined;
+        this->channel_name = this->read_channel_name(buf);
+        joined << this->display_name << " has joined " << this->channel_name << ".";
+        std::string message_new = joined.str();
+        length = this->create_message(buf_message, message_new, false);
+        this->respond_to_message(buf_message, length, s, synch_var, this->channel_name);
 
-    }else{
+    } else {
         std::string failure = "Join is not succesful";
         send_reply(buf, failure, false);
     }
 }
 
-void UDPhandler::respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var) {
+void UDPhandler::respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
+                                    std::string &channel) {
     bool valid_message = true;
-    std::cout << "Got message" << std::endl;
 
     if (!this->buffer_validation(buf, message_length, 3, 2, 2, 20, 1400))
         valid_message = false;
 
     if (valid_message) {
-        std::cout << "Sending" << std::endl;
         {
             std::lock_guard<std::mutex> lock(synch_var->mtx);
-            s->emplace(this->client_addr, buf, message_length);
+            s->emplace(this->client_addr, buf, message_length, channel);
             synch_var->ready = true;
         }
         synch_var->cv.notify_all();
@@ -329,10 +338,10 @@ bool UDPhandler::buffer_validation(uint8_t *buf, int message_length, int start_p
     return true;
 }
 
-std::string read_channel_name(uint8_t *buf){
+std::string UDPhandler::read_channel_name(uint8_t *buf) {
     int i = 3;
     std::string channel;
-    while(buf[i] != 0x00){
+    while (buf[i] != 0x00) {
         channel.push_back(static_cast<char>(buf[i]));
         i++;
     }
@@ -340,6 +349,7 @@ std::string read_channel_name(uint8_t *buf){
 }
 
 void UDPhandler::change_display_name(uint8_t *buf, bool second) {
+    this->display_name.clear();
     int i = 3;
     if (second) {
         while (buf[i] != 0x00)
@@ -350,4 +360,7 @@ void UDPhandler::change_display_name(uint8_t *buf, bool second) {
         this->display_name.push_back(static_cast<char>(buf[i]));
         i++;
     }
+
+    //std::cout << this->display_name << std::endl;
+
 }

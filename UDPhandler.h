@@ -27,8 +27,9 @@ struct UserInfo {
     sockaddr_in client;
     uint8_t *buf;
     int length;
+    std::string channel;
 
-    UserInfo(sockaddr_in c, uint8_t *m, int l) : client(c), buf(m), length(l) {};
+    UserInfo(sockaddr_in c, uint8_t *m, int l, std::string name) : client(c), buf(m), length(l), channel(std::move(name)) {};
 };
 
 struct synch {
@@ -119,17 +120,15 @@ private:
 
     bool waiting_for_confirm(uint8_t *buf, int len);
 
-    void respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var);
+    void respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var, std::string &channel);
 
 
     bool buffer_validation(uint8_t *buf, int message_length, int start_position, int minimal_length,
                            int amount_of_fields = 2, int first_limit = 20, int second_limit = 20, int third_limit = 5);
 
-
-
     void change_display_name(uint8_t *buf, bool second);
 
-
+    std::string read_channel_name(uint8_t *buf);
 
 };
 
