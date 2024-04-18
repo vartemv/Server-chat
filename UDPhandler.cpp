@@ -16,7 +16,7 @@ void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, in
 
     uint8_t internal_buf[1024];
     udp.send_confirm(buf);
-    udp.respond_to_auth(buf, length);
+    udp.respond_to_auth(buf, length, s, synch_var);
     while (true) {
         int length_internal = udp.wait_for_the_incoming_connection(internal_buf);
         if (!udp.decipher_the_message(internal_buf, length_internal, s, synch_var)) {
@@ -37,29 +37,20 @@ void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, in
 }
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler udp) {
-    //std::cout << "thread" << std::endl;
     while (!*terminate) {
-        //std::cout << "IN " << std::this_thread::get_id() << &synch_vars->cv << std::endl;
-//        std::cout << "Go to sleep " << std::this_thread::get_id() << " " <<  &synch_vars->cv <<std::endl;
         std::unique_lock<std::mutex> lock(synch_vars->mtx);
         synch_vars->cv.wait(lock, [&synch_vars] { return synch_vars->ready; });
-//        synch_vars->waiting.lock();
-        //std::cout << "Out " << std::this_thread::get_id() << " " << &synch_vars->cv << std::endl;
 
         synch_vars->waiting.lock();
         UserInfo new_uf = s->top();
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        //synch_vars->sending.lock();
-        if(new_uf.client.sin_port != udp.client_addr.sin_port){
+        if (new_uf.client.sin_port != udp.client_addr.sin_port) {
             udp.send_message(new_uf.buf, new_uf.length);
         }
-        //synch_vars->sending.unlock();
 
-//
         if (synch_vars->finished == *busy) {
-            //std::cout << "DONE" << std::endl;
             synch_vars->finished = 0;
             synch_vars->ready = false;
             s->pop();
@@ -88,11 +79,13 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         case 0x02://AUTH
             send_confirm(buf);
             if (!this->auth)
-                respond_to_auth(buf, length);
+                respond_to_auth(buf, length, s, synch_var);
             else
                 std::cout << "Already authed" << std::endl;
             break;
         case 0x03://JOIN
+            send_confirm(buf);
+            respond_to_join(buf, length, s, synch_var);
             break;
         case 0x04://MSG
             send_confirm(buf);
@@ -108,7 +101,7 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
     return true;
 }
 
-void UDPhandler::respond_to_auth(uint8_t *buf, int message_length) {
+void UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var) {
 
     bool valid_message = true;
 
@@ -130,13 +123,38 @@ void UDPhandler::respond_to_auth(uint8_t *buf, int message_length) {
         ss << this->display_name << " has joined ch.general.";
         std::string message = ss.str();
         uint8_t buf_message[1024];
-        this->create_message(buf_message, message, false);
-
-        //this->propagate_message(buf_message, addresses, message_length);
+        int length = this->create_message(buf_message, message, false);
+        this->respond_to_message(buf_message, length, s, synch_var);
 
         this->auth = true;
     } else {
         std::string failure = "Authentication is not succesful";
+        send_reply(buf, failure, false);
+    }
+}
+
+void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var) {
+    bool valid = true;
+
+    if(!this->buffer_validation(buf, message_length,3,2))
+        valid = false;
+
+    if(valid){
+        this->change_display_name(buf, true);
+        std::string success = "Join is succesful";
+        send_reply(buf, success, true);
+
+        std::stringstream ss;
+        ss << this->display_name << " has left"<< this->channel_name;
+        std::string message = ss.str();
+        uint8_t buf_message[1024];
+        int length = this->create_message(buf_message, message, false);
+        this->respond_to_message(buf_message, length, s, synch_var);
+
+
+
+    }else{
+        std::string failure = "Join is not succesful";
         send_reply(buf, failure, false);
     }
 }
@@ -156,10 +174,8 @@ void UDPhandler::respond_to_message(uint8_t *buf, int message_length, std::stack
             synch_var->ready = true;
         }
         synch_var->cv.notify_all();
-        //synch_var->cv.notify_all();
     } else {
         std::cout << "Invalid message" << std::endl;
-//        this->send_err();
     }
 }
 
@@ -178,13 +194,11 @@ void UDPhandler::send_confirm(uint8_t *buf) {
     if (bytes_tx < 0) perror("ERROR: sendto");
 }
 
-
 void UDPhandler::send_reply(uint8_t *buf, std::string &message, bool OK) {
     uint8_t buf_out[1024];
 
     socklen_t address_size = sizeof(this->client_addr);
 
-    int previous = this->global_counter;
     ReplyPacket reply(0x01, this->global_counter, message, OK ? 1 : 0, read_packet_id(buf));
     this->global_counter++;
 
@@ -193,7 +207,7 @@ void UDPhandler::send_reply(uint8_t *buf, std::string &message, bool OK) {
                            address_size);
     if (bytes_tx < 0) perror("ERROR: sendto");
 
-    if (!waiting_for_confirm(previous, buf_out, len))
+    if (!waiting_for_confirm(buf_out, len))
         std::cout << "Client didn't confirm" << std::endl;
 }
 
@@ -202,20 +216,18 @@ void UDPhandler::send_message(uint8_t *buf, int message_length) {
 
     sockaddr_in backup = this->client_addr;
 
-    int previous = this->global_counter;
     sendto(this->client_socket, buf, message_length, 0, (struct sockaddr *) &this->client_addr, address_size);
     this->global_counter++;
 
-    if (!waiting_for_confirm(previous, buf, message_length))
+    if (!waiting_for_confirm(buf, message_length))
         std::cout << "Client didn't confirm" << std::endl;
 
     this->client_addr = backup;
 }
 
 int UDPhandler::create_message(uint8_t *buf_out, std::string &msg, bool error) {
-
-    MsgPacket message(error ? 0xFE : 0x04, this->global_counter, msg, this->display_name);
-
+    std::string server = "Server";
+    MsgPacket message(error ? 0xFE : 0x04, this->global_counter, msg, server);
     return message.construct_message(buf_out);
 }
 
@@ -250,29 +262,12 @@ int UDPhandler::wait_for_the_incoming_connection(uint8_t *buf_out, int timeout) 
     return 0;
 }
 
-void UDPhandler::change_display_name(uint8_t *buf, bool second) {
-
-    int i = 3;
-
-    if (second) {
-        while (buf[i] != 0x00)
-            i++;
-    }
-
-    i++;
-
-    while (buf[i] != 0x00) {
-        this->display_name.push_back(static_cast<char>(buf[i]));
-        i++;
-    }
-}
-
-bool UDPhandler::waiting_for_confirm(int count, uint8_t *buf, int len) {
+bool UDPhandler::waiting_for_confirm(uint8_t *buf, int len) {
     uint8_t buffer[1024];
     bool confirmed = false;
     for (int i = 0; i < this->retransmissions; ++i) {
         if (this->wait_for_the_incoming_connection(buffer, this->timeout_chat)) {
-            if (buffer[0] == 0x00) {
+            if (buffer[0] == 0x00 && read_packet_id(buffer) == read_packet_id(buf)) {
                 confirmed = true;
             }
         }
@@ -332,4 +327,27 @@ bool UDPhandler::buffer_validation(uint8_t *buf, int message_length, int start_p
     }
 
     return true;
+}
+
+std::string read_channel_name(uint8_t *buf){
+    int i = 3;
+    std::string channel;
+    while(buf[i] != 0x00){
+        channel.push_back(static_cast<char>(buf[i]));
+        i++;
+    }
+    return channel;
+}
+
+void UDPhandler::change_display_name(uint8_t *buf, bool second) {
+    int i = 3;
+    if (second) {
+        while (buf[i] != 0x00)
+            i++;
+    }
+    i++;
+    while (buf[i] != 0x00) {
+        this->display_name.push_back(static_cast<char>(buf[i]));
+        i++;
+    }
 }

@@ -57,6 +57,7 @@ public:
     bool auth;
     sockaddr_in client_addr;
     std::string display_name;
+    std::string channel_name;
 
     UDPhandler(int ret, int t, sockaddr_in client) {
         this->retransmissions = ret;
@@ -90,6 +91,7 @@ public:
 
         client_addr = client;
 
+        channel_name = "general";
     }
 
     static void handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout,
@@ -102,7 +104,9 @@ public:
 private:
     bool decipher_the_message(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
 
-    void respond_to_auth(uint8_t *buf, int length);
+    void respond_to_auth(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
+
+    void respond_to_join(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
 
     void send_confirm(uint8_t *buf);
 
@@ -113,7 +117,7 @@ private:
     //void add_to_sent_messages();
     int wait_for_the_incoming_connection(uint8_t *buf_out, int timeout = -1);
 
-    bool waiting_for_confirm(int count, uint8_t *buf, int len);
+    bool waiting_for_confirm(uint8_t *buf, int len);
 
     void respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var);
 
