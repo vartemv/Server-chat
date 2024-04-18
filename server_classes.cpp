@@ -47,6 +47,8 @@ void UDPserver::Listen() {
 
     struct epoll_event events[1];
     std::vector<struct sockaddr_in> addresses;
+    std::stack<UserInfo> s;
+    synch synch_variables(0);
     while (true) {
         int num_events = epoll_wait(epoll_fd, events, 1, 3000); // 5 seconds timeout
 
@@ -75,7 +77,9 @@ void UDPserver::Listen() {
                 continue;
             }
 
-            tp.AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, retransmissions, timeout, &addresses));
+
+
+            tp.AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, retransmissions, timeout, &addresses, &tp.busy_threads, &s, &synch_variables));
         }
 
     }

@@ -11,13 +11,39 @@
 #include <iostream>
 #include "packets.h"
 #include <thread>
+#include <utility>
 #include <vector>
 #include <algorithm>
 #include <sys/epoll.h>
 #include <csignal>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <stack>
 
 #define IPK_SERVER_UDPHANDLER_H
 
+struct UserInfo {
+    sockaddr_in client;
+    uint8_t *buf;
+    int length;
+
+    UserInfo(sockaddr_in c, uint8_t *m, int l) : client(c), buf(m), length(l) {};
+};
+
+struct synch {
+    std::mutex mtx;
+    std::mutex stack;
+    std::mutex sending;
+    std::mutex waiting;
+    bool ready;
+    bool waiting_b;
+    std::condition_variable cv;
+    std::condition_variable cv2;
+    int finished;
+    std::string check = "Hello";
+    synch(int b): finished(b), ready(false), waiting_b(false){};
+};
 
 class UDPhandler {
 public:
@@ -29,8 +55,10 @@ public:
     epoll_event events[1];
     int epoll_fd;
     bool auth;
+    sockaddr_in client_addr;
+    std::string display_name;
 
-    UDPhandler(int ret, int t) {
+    UDPhandler(int ret, int t, sockaddr_in client) {
         this->retransmissions = ret;
         this->timeout_chat = t;
         this->global_counter = 0;
@@ -60,27 +88,49 @@ public:
 
         auth = false;
 
+        client_addr = client;
+
     }
 
     static void handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout,
-                          std::vector<sockaddr_in> *addresses);
+                          std::vector<sockaddr_in> *addresses, int *busy, std::stack<UserInfo> *s, synch *synch_var);
+
+    int create_message(uint8_t *buf_out, std::string &msg, bool error);
+
+    void send_message(uint8_t *buf, int message_length);
 
 private:
-    bool decipher_the_message(uint8_t *buf, sockaddr_in client_addr, int length);
+    bool decipher_the_message(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
 
-    void respond_to_auth(uint8_t *buf, int length, sockaddr_in client_addr);
+    void respond_to_auth(uint8_t *buf, int length);
 
-    void send_confirm(uint8_t *buf, sockaddr_in client_addr);
+    void send_confirm(uint8_t *buf);
 
-    void send_reply(uint8_t *buf, sockaddr_in client_addr, std::string &message, bool OK);
+    void send_reply(uint8_t *buf, std::string &message, bool OK);
 
     static int read_packet_id(uint8_t *buf);
 
     //void add_to_sent_messages();
-    int wait_for_the_incoming_connection(sockaddr_in client_addr, uint8_t *buf_out, int timeout = -1);
+    int wait_for_the_incoming_connection(uint8_t *buf_out, int timeout = -1);
 
-    bool waiting_for_confirm(int count, uint8_t *buf, int len, sockaddr_in client_addr);
+    bool waiting_for_confirm(int count, uint8_t *buf, int len);
+
+    void respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var);
+
+
+    bool buffer_validation(uint8_t *buf, int message_length, int start_position, int minimal_length,
+                           int amount_of_fields = 2, int first_limit = 20, int second_limit = 20, int third_limit = 5);
+
+
+
+    void change_display_name(uint8_t *buf, bool second);
+
+
+
 };
+
+void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler udp);
 
 
 #endif //IPK_SERVER_UDPHANDLER_H
+
