@@ -6,13 +6,13 @@
 #include "UDPhandler.h"
 
 void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout,
-                           std::vector<sockaddr_in> *addresses, int *busy, std::stack<UserInfo> *s, synch *synch_var) {
-    //std::cout << "Running thread with id: " << std::this_thread::get_id() << std::endl;
+                           int *busy, std::stack<UserInfo> *s, synch *synch_var) {
+
     UDPhandler udp(retransmissions, timeout, client_addr);
 
     bool end = false;
 
-    std::thread sender(read_queue, s, &end, synch_var, busy, udp);
+    std::thread sender(read_queue, s, &end, synch_var, busy, &udp);
 
     uint8_t internal_buf[1024];
     udp.send_confirm(buf);
@@ -24,19 +24,11 @@ void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, in
         }
     }
 
-    //TODO Create semaphore
-    auto newEnd = std::remove_if(addresses->begin(), addresses->end(),
-                                 [&client_addr](sockaddr_in &addr) {
-                                     return addr.sin_port == client_addr.sin_port &&
-                                            addr.sin_addr.s_addr ==
-                                            client_addr.sin_addr.s_addr;
-                                 });
-    addresses->erase(newEnd, addresses->end());
     end = true;
     sender.join();
 }
 
-void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler udp) {
+void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler *udp) {
     while (!*terminate) {
         std::unique_lock<std::mutex> lock(synch_vars->mtx);
         synch_vars->cv.wait(lock, [&synch_vars] { return synch_vars->ready; });
@@ -46,8 +38,8 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if (new_uf.client.sin_port != udp.client_addr.sin_port && new_uf.channel == udp.channel_name) {
-            udp.send_message(new_uf.buf, new_uf.length);
+        if (new_uf.client.sin_port != udp->client_addr.sin_port && new_uf.channel == udp->channel_name) {
+            udp->send_message(new_uf.buf, new_uf.length);
         }
 
         if (synch_vars->finished == *busy) {
@@ -89,14 +81,20 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             break;
         case 0x04://MSG
             send_confirm(buf);
-            respond_to_message(buf, length, s, synch_var, this->channel_name);
+            this->message(buf, length, s, synch_var, this->channel_name);
             break;
         case 0xFF://BYE
             std::cout << "Got bye" << std::endl;
+            response_to_bye(s, synch_var);
             send_confirm(buf);
+
             return false;
         case 0xFE://ERR
-            return false;
+            send_confirm(buf);
+            break;
+            //return false;
+        default:
+            std::cout << "Unknown" << std::endl;
     }
     return true;
 }
@@ -124,7 +122,7 @@ void UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<Us
         std::string message = ss.str();
         uint8_t buf_message[1024];
         int length = this->create_message(buf_message, message, false);
-        this->respond_to_message(buf_message, length, s, synch_var, this->channel_name);
+        this->message(buf_message, length, s, synch_var, this->channel_name);
 
         this->auth = true;
     } else {
@@ -149,10 +147,10 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
         std::string message = ss.str();
         uint8_t buf_message[1024];
         int length = this->create_message(buf_message, message, false);
-        std::cout << this->channel_name << std::endl;
-        this->respond_to_message(buf_message, length, s, synch_var, this->channel_name);
+        //std::cout << this->channel_name << std::endl;
+        this->message(buf_message, length, s, synch_var, this->channel_name);
 
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds (10));
 
         memset(buf_message, 0, 1024);
         //uint8_t buf_m[1024];
@@ -161,7 +159,7 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
         joined << this->display_name << " has joined " << this->channel_name << ".";
         std::string message_new = joined.str();
         length = this->create_message(buf_message, message_new, false);
-        this->respond_to_message(buf_message, length, s, synch_var, this->channel_name);
+        this->message(buf_message, length, s, synch_var, this->channel_name);
 
     } else {
         std::string failure = "Join is not succesful";
@@ -169,8 +167,8 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
     }
 }
 
-void UDPhandler::respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
-                                    std::string &channel) {
+void UDPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
+                         std::string &channel) {
     bool valid_message = true;
 
     if (!this->buffer_validation(buf, message_length, 3, 2, 2, 20, 1400))
@@ -186,6 +184,18 @@ void UDPhandler::respond_to_message(uint8_t *buf, int message_length, std::stack
     } else {
         std::cout << "Invalid message" << std::endl;
     }
+}
+
+void UDPhandler::response_to_bye(std::stack<UserInfo> *s, synch *synch_var) {
+    std::stringstream ss;
+    ss << this->display_name << " has left " << this->channel_name << ".";
+    std::string message = ss.str();
+    std::cout << message << std::endl;
+    uint8_t buf_message[1024];
+    int length = this->create_message(buf_message, message, false);
+    //std::cout << this->channel_name << std::endl;
+    this->message(buf_message, length, s, synch_var, this->channel_name);
+    std::this_thread::sleep_for(std::chrono::milliseconds (10));
 }
 
 

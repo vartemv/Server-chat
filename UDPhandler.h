@@ -95,8 +95,7 @@ public:
         channel_name = "general";
     }
 
-    static void handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout,
-                          std::vector<sockaddr_in> *addresses, int *busy, std::stack<UserInfo> *s, synch *synch_var);
+    static void handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout, int *busy, std::stack<UserInfo> *s, synch *synch_var);
 
     int create_message(uint8_t *buf_out, std::string &msg, bool error);
 
@@ -120,7 +119,7 @@ private:
 
     bool waiting_for_confirm(uint8_t *buf, int len);
 
-    void respond_to_message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var, std::string &channel);
+    void message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var, std::string &channel);
 
 
     bool buffer_validation(uint8_t *buf, int message_length, int start_position, int minimal_length,
@@ -128,11 +127,13 @@ private:
 
     void change_display_name(uint8_t *buf, bool second);
 
+    void response_to_bye(std::stack<UserInfo> *s, synch *synch_var);
+
     std::string read_channel_name(uint8_t *buf);
 
 };
 
-void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler udp);
+void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler *udp);
 
 
 #endif //IPK_SERVER_UDPHANDLER_H
