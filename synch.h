@@ -5,6 +5,7 @@
 #ifndef IPK_SERVER_SYNCH_H
 
 #define IPK_SERVER_SYNCH_H
+
 #include <mutex>
 #include <condition_variable>
 #include <string>
@@ -17,7 +18,7 @@
 #include <sstream>
 #include <vector>
 #include <regex>
-
+#include <cstring>
 
 struct synch {
     std::mutex mtx;
@@ -30,7 +31,8 @@ struct synch {
     std::condition_variable cv2;
     int finished;
     std::string check = "Hello";
-    synch(int b): finished(b), ready(false), waiting_b(false){};
+
+    synch(int b) : finished(b), ready(false), waiting_b(false) {};
 };
 
 struct UserInfo {
@@ -42,7 +44,9 @@ struct UserInfo {
     bool tcp;
 
 
-    UserInfo(sockaddr_in c, uint8_t *m, int l, std::string name) : client(c), buf(m), length(l), channel(std::move(name)) {};
+    UserInfo(sockaddr_in c, uint8_t *m, int l, std::string name, bool t, int cs) : client(c), buf(m), length(l),
+                                                                                   channel(std::move(name)), tcp(t),
+                                                                                   tcp_socket(cs) {};
 };
 
 

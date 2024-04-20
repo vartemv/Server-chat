@@ -14,20 +14,20 @@ int main(int argc, char* argv[]) {
 
     init(server_addr, ah.get_port(), ah.get_address());
 
-    //UDPserver udp {ah.get_retransmissions(), ah.get_timeout(), ah.get_port(), ah.get_address()};
+//    UDPserver udp {ah.get_retransmissions(), ah.get_timeout(), ah.get_port(), ah.get_address()};
     TCPserver tcp {ah.get_port(), ah.get_address()};
 
-    //udp.Initialize(server_addr);
+//    udp.Initialize(server_addr);
     tcp.Initialize(server_addr);
 
     std::thread tcpThread(&TCPserver::Listen, &tcp, &tp, &s, &synch_variables);
-    //std::thread udpThread(&UDPserver::Listen, &udp, &tp, &s, &synch_variables);
+//    std::thread udpThread(&UDPserver::Listen, &udp, &tp, &s, &synch_variables);
 
     tcpThread.join();
-    //udpThread.join();
+//    udpThread.join();
 
     tcp.Destroy();
-    //udp.Destroy();
+//    udp.Destroy();
 
     delete server_addr;
 }

@@ -1,8 +1,6 @@
 //
 // Created by artem on 4/20/24.
 //
-
-
 #include "TCPhandler.h"
 
 void TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var) {
@@ -15,12 +13,12 @@ void TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s
 
     uint8_t internal_buf[1024];
 
-//    logger();
-//    tcp.respnsoe_to_auth();
-
-    while(true){
+    while (true) {
         int length = tcp.listening_for_incoming_connection(internal_buf, 1024);
-        tcp.decipher_the_message(internal_buf, length, s, synch_var);
+        if (length == 0)
+            break;
+        if (!tcp.decipher_the_message(internal_buf, length, s, synch_var))
+            break;
     }
 
     sender.join();
@@ -60,12 +58,13 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
 void TCPhandler::send_buf(uint8_t *buf, int length) const {
     ssize_t tx = send(this->client_socket, buf, length, 0);
 
-    if(tx<0){
+    if (tx < 0) {
         perror("Error sending message");
     }
 }
 
 int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
+
     int event_count = epoll_wait(this->epoll_fd, this->events, 1, -1);
 
     if (event_count == -1) {
@@ -79,10 +78,10 @@ int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
                 if (n == -1) {
                     std::cerr << "recvfrom failed. errno: " << errno << '\n';
                     continue;
-                }else if(n == 0){
+                } else if (n == 0) {
                     std::cout << "Connection is closed by client" << std::endl;
-                    close(this->client_socket);
-                }else if (n > 0) {
+                    return 0;
+                } else if (n > 0) {
                     return n;
                 }
             }
@@ -97,38 +96,80 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         out_str += static_cast<char>(buf[i]);
     }
 
-    std::cout << out_str << std::endl;
-
     std::istringstream iss(out_str);
     std::vector<std::string> result;
     for (std::string element; std::getline(iss, element, ' ');) {
         result.push_back(element);
     }
 
-    if(result[0] == "AUTH"){
-        std::regex e("^AUTH .{1,20} as .{1,20} using .{1,5}$");
+    std::cout << out_str << std::endl;
+
+    if (result[0] == "AUTH") {
+        std::regex e("^AUTH .{1,20} AS .{1,20} USING .{1,6}$");
         if (!std::regex_match(out_str, e)) {
             std::string mes = "Wrong AUTH format";
             std::cout << mes << std::endl;
             create_message(true, "Wrong AUTH format");
             return false;
         }
+        this->create_reply("OK", "Authentication is successful");
+        this->display_name = result[3];
+        this->user_changed_channel(s, synch_var, "joined");
 
+    } else if (result[0] == "MSG") {
+        std::regex e("^MSG FROM .{1,20} IS .{1,1400}$");
+        if (!std::regex_match(out_str, e)) {
+            std::string mes = "Wrong MSG format";
+            std::cout << mes << std::endl;
+            create_message(true, "Wrong MSG format");
+            return false;
+        }
+        this->display_name = result[2];
+        this->message(buf, length, s, synch_var, this->channel_name);
+    } else if (result[0] == "JOIN") {
+        std::regex e("^JOIN .{1,20} AS .{1,20}$");
+        if (!std::regex_match(out_str, e)) {
+            std::string mes = "Wrong JOIN format";
+            create_message(true, mes.c_str());
+            this->create_reply("NOK", "Join wasn't successful");
+            return false;
+        }
+        if (result[1] != this->channel_name) {
+            this->user_changed_channel(s, synch_var, "left");
+            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+            this->channel_name = result[1];
+            this->display_name = result[3];
+            this->user_changed_channel(s, synch_var, "joined");
+            this->create_reply("OK", "Join was successful");
+        }else{
+            this->create_reply("NOK", "Tried to join to current channel");
+        }
     }
 
+    return true;
 }
 
+void TCPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
+                         std::string &channel) {
+    struct sockaddr_in blank;
+    {
+        std::lock_guard<std::mutex> lock(synch_var->mtx);
+        s->emplace(blank, buf, message_length, channel, true, this->client_socket);
+        synch_var->ready = true;
+    }
+    synch_var->cv.notify_all();
+}
 
-
-void TCPhandler::create_reply(const char* status, const char* msg){
+void TCPhandler::create_reply(const char *status, const char *msg) {
     std::string message;
-    message = "REPLY " + std::string(status) + " IS " + std::string(msg);
+    message = "REPLY " + std::string(status) + " IS " + std::string(msg) + "\r\n";
     this->send_string(message);
 }
 
-void TCPhandler::create_message(bool error, const char* msg) {
+void TCPhandler::create_message(bool error, const char *msg) {
     std::string message;
-    error ? message = "ERR FROM SERVER IS " + std::string(msg) + "\r\n" : message = "MSG FROM SERVER IS " + std::string(msg) + "\r\n";
+    error ? message = "ERR FROM SERVER IS " + std::string(msg) + "\r\n" : message = "MSG FROM SERVER IS " +
+                                                                                    std::string(msg) + "\r\n";
     this->send_string(message);
 }
 
@@ -138,8 +179,23 @@ void TCPhandler::send_string(std::string &msg) const {
 
     ssize_t tx = send(this->client_socket, message, bytes_left, 0);
 
-    if(tx<0){
+    if (tx < 0) {
         perror("Error sending message");
     }
 
+}
+
+void TCPhandler::user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char* action) {
+
+    std::stringstream ss;
+    ss << this->display_name << " has " << std::string(action) << " " << this->channel_name << ".";
+    std::string content = ss.str();
+
+    std::string message = "MSG FROM Server IS " + content + "\r\n";
+
+    uint8_t buffer[1024];
+
+    memcpy(buffer, message.c_str(), message.length());
+
+    this->message(buffer, message.length(), s, synch_var, this->channel_name);
 }

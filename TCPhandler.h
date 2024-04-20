@@ -43,7 +43,8 @@ public:
     static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var);
 
     void send_buf(uint8_t *buf, int length) const;
-    void create_message(bool error, const char* msg);
+
+    void create_message(bool error, const char *msg);
 
 private:
     int listening_for_incoming_connection(uint8_t *buf, int len);
@@ -52,7 +53,13 @@ private:
 
     void send_string(std::string &msg) const;
 
-    void create_reply(const char* status, const char* msg);
+    void create_reply(const char *status, const char *msg);
+
+    void message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
+                 std::string &channel);
+
+    void user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char* action);
+
 };
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, TCPhandler *tcp);

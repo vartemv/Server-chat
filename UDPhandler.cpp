@@ -188,7 +188,7 @@ void UDPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> 
     if (valid_message) {
         {
             std::lock_guard<std::mutex> lock(synch_var->mtx);
-            s->emplace(this->client_addr, buf, message_length, channel);
+            s->emplace(this->client_addr, buf, message_length, channel, false, 0);
             synch_var->ready = true;
         }
         synch_var->cv.notify_all();
