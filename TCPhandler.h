@@ -46,6 +46,8 @@ public:
 
     void create_message(bool error, const char *msg);
 
+    int convert_from_udp(uint8_t *buf, uint8_t *udp_buf);
+
 private:
     int listening_for_incoming_connection(uint8_t *buf, int len);
 

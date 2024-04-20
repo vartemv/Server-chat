@@ -35,7 +35,11 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->waiting.unlock();
 
         if (!new_uf.tcp) {
-            tcp->send_buf(new_uf.buf, new_uf.length);
+            if (new_uf.channel == tcp->channel_name) {
+                uint8_t buf[1024];
+                int length = tcp->convert_from_udp(buf, new_uf.buf);
+                tcp->send_buf(buf, length);
+            }
         } else {
             if (new_uf.tcp_socket != tcp->client_socket && new_uf.channel == tcp->channel_name) {
                 tcp->send_buf(new_uf.buf, new_uf.length);
@@ -141,7 +145,7 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             this->display_name = result[3];
             this->user_changed_channel(s, synch_var, "joined");
             this->create_reply("OK", "Join was successful");
-        }else{
+        } else {
             this->create_reply("NOK", "Tried to join to current channel");
         }
     }
@@ -185,7 +189,7 @@ void TCPhandler::send_string(std::string &msg) const {
 
 }
 
-void TCPhandler::user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char* action) {
+void TCPhandler::user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char *action) {
 
     std::stringstream ss;
     ss << this->display_name << " has " << std::string(action) << " " << this->channel_name << ".";
@@ -198,4 +202,32 @@ void TCPhandler::user_changed_channel(std::stack<UserInfo> *s, synch *synch_var,
     memcpy(buffer, message.c_str(), message.length());
 
     this->message(buffer, message.length(), s, synch_var, this->channel_name);
+}
+
+int TCPhandler::convert_from_udp(uint8_t *buf, uint8_t *udp_buf) {
+    int i = 3;
+    std::string display_n;
+    std::string contents;
+
+    while (udp_buf[i] != 0x00) {
+        display_n.push_back(static_cast<char>(udp_buf[i]));
+        i++;
+    }
+
+    std::cout << display_n << std::endl;
+
+    i++;
+
+    while (udp_buf[i] != 0x00) {
+        contents.push_back(static_cast<char>(udp_buf[i]));
+        i++;
+    }
+
+    std::cout << contents << std::endl;
+
+    std::string message = "MSG FROM " + display_n + " IS " + contents + "\r\n";
+
+    memcpy(buf, message.c_str(), message.length());
+
+    return message.length();
 }
