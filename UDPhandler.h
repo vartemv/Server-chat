@@ -3,48 +3,23 @@
 //
 
 #ifndef IPK_SERVER_UDPHANDLER_H
-
-#include <cstdint>
-#include <netinet/in.h>
-#include <cstdio>
-#include <cstdlib>
-#include <iostream>
-#include "packets.h"
-#include <thread>
-#include <utility>
-#include <vector>
-#include <algorithm>
-#include <sys/epoll.h>
-#include <csignal>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
-#include <stack>
-
 #define IPK_SERVER_UDPHANDLER_H
 
-struct UserInfo {
-    sockaddr_in client;
-    uint8_t *buf;
-    int length;
-    std::string channel;
+#include <cstdint>
 
-    UserInfo(sockaddr_in c, uint8_t *m, int l, std::string name) : client(c), buf(m), length(l), channel(std::move(name)) {};
-};
+#include <cstdio>
+#include <cstdlib>
 
-struct synch {
-    std::mutex mtx;
-    std::mutex stack;
-    std::mutex sending;
-    std::mutex waiting;
-    bool ready;
-    bool waiting_b;
-    std::condition_variable cv;
-    std::condition_variable cv2;
-    int finished;
-    std::string check = "Hello";
-    synch(int b): finished(b), ready(false), waiting_b(false){};
-};
+#include "packets.h"
+
+#include <utility>
+
+#include <algorithm>
+
+#include <queue>
+#include "synch.h"
+#include <arpa/inet.h>
+
 
 class UDPhandler {
 public:
@@ -127,13 +102,15 @@ private:
 
     void change_display_name(uint8_t *buf, bool second);
 
-    void response_to_bye(std::stack<UserInfo> *s, synch *synch_var);
+    void client_leaving(std::stack<UserInfo> *s, synch *synch_var);
 
     std::string read_channel_name(uint8_t *buf);
 
 };
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler *udp);
+
+void logger(sockaddr_in client, const char * type, const char* operation);
 
 
 #endif //IPK_SERVER_UDPHANDLER_H

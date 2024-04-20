@@ -16,22 +16,31 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include "UDPhandler.h"
+#include "TCPhandler.h"
 
 #define PORT 47356
 #endif //IPK_SERVER_SERVER_CLASSES_H
 
 class Server {
 public:
-    virtual void Initialize() = 0;
+    virtual void Initialize(struct sockaddr_in *server_address) = 0;
 
-    virtual void Listen() = 0;
+    virtual void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) = 0;
 };
 
 class TCPserver : public Server {
 public:
-    void Initialize() override;
+    int port;
+    const char* addr;
 
-    void Listen() override;
+    TCPserver(int p, const char* a){
+        this->port = p;
+        this->addr = a;
+    }
+
+    void Initialize(struct sockaddr_in *server_address) override;
+
+    void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) override;
 
     void Destroy();
 
@@ -43,15 +52,19 @@ class UDPserver : public Server {
 public:
     int retransmissions;
     int timeout;
+    const char* addr;
+    int port;
 
-    UDPserver(int ret, int t){
+    UDPserver(int ret, int t, int p, const char* a){
         this->retransmissions = ret;
         this->timeout = t;
+        this->port = p;
+        this->addr = a;
     }
 
-    void Initialize() override;
+    void Initialize(struct sockaddr_in *server_address) override;
 
-    void Listen() override;
+    void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) override;
 
     void Destroy();
 

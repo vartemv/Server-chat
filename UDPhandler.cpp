@@ -1,8 +1,6 @@
 //
 // Created by artem on 4/14/24.
 //
-#include <arpa/inet.h>
-#include <sstream>
 #include "UDPhandler.h"
 
 void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout,
@@ -15,8 +13,10 @@ void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, in
     std::thread sender(read_queue, s, &end, synch_var, busy, &udp);
 
     uint8_t internal_buf[1024];
+    logger(udp.client_addr, "AUTH", "RECV");
     udp.send_confirm(buf);
     udp.respond_to_auth(buf, length, s, synch_var);
+
     while (true) {
         int length_internal = udp.wait_for_the_incoming_connection(internal_buf);
         if (!udp.decipher_the_message(internal_buf, length_internal, s, synch_var)) {
@@ -38,8 +38,12 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if (new_uf.client.sin_port != udp->client_addr.sin_port && new_uf.channel == udp->channel_name) {
+        if (new_uf.tcp) {
             udp->send_message(new_uf.buf, new_uf.length);
+        } else {
+            if ((new_uf.client.sin_port != udp->client_addr.sin_port && new_uf.channel == udp->channel_name)) {
+                udp->send_message(new_uf.buf, new_uf.length);
+            }
         }
 
         if (synch_vars->finished == *busy) {
@@ -49,7 +53,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         }
 
         lock.unlock();
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         lock.lock();
 
     }
@@ -69,28 +73,37 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         case 0x00://CONFIRM
             break;
         case 0x02://AUTH
+            logger(this->client_addr, "AUTH", "RECV");
             send_confirm(buf);
             if (!this->auth)
                 respond_to_auth(buf, length, s, synch_var);
             else
                 std::cout << "Already authed" << std::endl;
+
             break;
         case 0x03://JOIN
+            logger(this->client_addr, "JOIN", "RECV");
             send_confirm(buf);
             respond_to_join(buf, length, s, synch_var);
+
             break;
         case 0x04://MSG
+            logger(this->client_addr, "MSG", "RECV");
             send_confirm(buf);
             this->message(buf, length, s, synch_var, this->channel_name);
+
             break;
         case 0xFF://BYE
-            std::cout << "Got bye" << std::endl;
-            response_to_bye(s, synch_var);
+            //std::cout << "Got bye" << std::endl;
+            this->client_leaving(s, synch_var);
+            logger(this->client_addr, "BYE", "RECV");
             send_confirm(buf);
 
             return false;
         case 0xFE://ERR
+            logger(this->client_addr, "ERR", "RECV");
             send_confirm(buf);
+
             break;
             //return false;
         default:
@@ -147,13 +160,11 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
         std::string message = ss.str();
         uint8_t buf_message[1024];
         int length = this->create_message(buf_message, message, false);
-        //std::cout << this->channel_name << std::endl;
         this->message(buf_message, length, s, synch_var, this->channel_name);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds (10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
         memset(buf_message, 0, 1024);
-        //uint8_t buf_m[1024];
         std::stringstream joined;
         this->channel_name = this->read_channel_name(buf);
         joined << this->display_name << " has joined " << this->channel_name << ".";
@@ -186,16 +197,15 @@ void UDPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> 
     }
 }
 
-void UDPhandler::response_to_bye(std::stack<UserInfo> *s, synch *synch_var) {
+void UDPhandler::client_leaving(std::stack<UserInfo> *s, synch *synch_var) {
     std::stringstream ss;
     ss << this->display_name << " has left " << this->channel_name << ".";
     std::string message = ss.str();
-    std::cout << message << std::endl;
+    //std::cout << message << std::endl;
     uint8_t buf_message[1024];
     int length = this->create_message(buf_message, message, false);
-    //std::cout << this->channel_name << std::endl;
     this->message(buf_message, length, s, synch_var, this->channel_name);
-    std::this_thread::sleep_for(std::chrono::milliseconds (10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 
@@ -211,6 +221,9 @@ void UDPhandler::send_confirm(uint8_t *buf) {
     long bytes_tx = sendto(this->client_socket, buf_out, len, 0, (struct sockaddr *) &(this->client_addr),
                            address_size);
     if (bytes_tx < 0) perror("ERROR: sendto");
+
+    logger(this->client_addr, "CONFIRM", "SENT");
+
 }
 
 void UDPhandler::send_reply(uint8_t *buf, std::string &message, bool OK) {
@@ -228,6 +241,8 @@ void UDPhandler::send_reply(uint8_t *buf, std::string &message, bool OK) {
 
     if (!waiting_for_confirm(buf_out, len))
         std::cout << "Client didn't confirm" << std::endl;
+
+    logger(this->client_addr, "REPLY", "SENT");
 }
 
 void UDPhandler::send_message(uint8_t *buf, int message_length) {
@@ -370,7 +385,9 @@ void UDPhandler::change_display_name(uint8_t *buf, bool second) {
         this->display_name.push_back(static_cast<char>(buf[i]));
         i++;
     }
+}
 
-    //std::cout << this->display_name << std::endl;
-
+void logger(sockaddr_in client, const char *type, const char *operation) {
+    std::cout << operation << " " << inet_ntoa(client.sin_addr) << ":" << ntohs(client.sin_port) << " | " << type
+              << std::endl;
 }
