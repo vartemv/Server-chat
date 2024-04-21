@@ -18,7 +18,7 @@
 
 #include <queue>
 #include "synch.h"
-#include <arpa/inet.h>
+
 
 
 class UDPhandler {
@@ -72,9 +72,11 @@ public:
 
     static void handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout, int *busy, std::stack<UserInfo> *s, synch *synch_var);
 
-    int create_message(uint8_t *buf_out, std::string &msg, bool error);
+    int create_message(uint8_t *buf_out, std::string &msg, bool error,std::string &name);
 
     void send_message(uint8_t *buf, int message_length);
+
+    int convert_from_tcp(uint8_t *buf, uint8_t *tcp_buf);
 
 private:
     bool decipher_the_message(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
@@ -89,7 +91,6 @@ private:
 
     static int read_packet_id(uint8_t *buf);
 
-    //void add_to_sent_messages();
     int wait_for_the_incoming_connection(uint8_t *buf_out, int timeout = -1);
 
     bool waiting_for_confirm(uint8_t *buf, int len);

@@ -39,7 +39,11 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->waiting.unlock();
 
         if (new_uf.tcp) {
-            udp->send_message(new_uf.buf, new_uf.length);
+            if (new_uf.channel == udp->channel_name) {
+                uint8_t buf[1024];
+                int length = udp->UDPhandler::convert_from_tcp(buf, new_uf.buf);
+                udp->send_message(buf, length);
+            }
         } else {
             if ((new_uf.client.sin_port != udp->client_addr.sin_port && new_uf.channel == udp->channel_name)) {
                 udp->send_message(new_uf.buf, new_uf.length);
@@ -101,6 +105,7 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
 
             return false;
         case 0xFE://ERR
+            this->client_leaving(s, synch_var);
             logger(this->client_addr, "ERR", "RECV");
             send_confirm(buf);
 
@@ -134,7 +139,8 @@ void UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<Us
         ss << this->display_name << " has joined general.";
         std::string message = ss.str();
         uint8_t buf_message[1024];
-        int length = this->create_message(buf_message, message, false);
+        std::string name = "Server";
+        int length = this->create_message(buf_message, message, false, name);
         this->message(buf_message, length, s, synch_var, this->channel_name);
 
         this->auth = true;
@@ -159,7 +165,8 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
         ss << this->display_name << " has left " << this->channel_name << ".";
         std::string message = ss.str();
         uint8_t buf_message[1024];
-        int length = this->create_message(buf_message, message, false);
+        std::string name = "Server";
+        int length = this->create_message(buf_message, message, false, name);
         this->message(buf_message, length, s, synch_var, this->channel_name);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -169,7 +176,7 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
         this->channel_name = this->read_channel_name(buf);
         joined << this->display_name << " has joined " << this->channel_name << ".";
         std::string message_new = joined.str();
-        length = this->create_message(buf_message, message_new, false);
+        length = this->create_message(buf_message, message_new, false, name);
         this->message(buf_message, length, s, synch_var, this->channel_name);
 
     } else {
@@ -203,7 +210,8 @@ void UDPhandler::client_leaving(std::stack<UserInfo> *s, synch *synch_var) {
     std::string message = ss.str();
     //std::cout << message << std::endl;
     uint8_t buf_message[1024];
-    int length = this->create_message(buf_message, message, false);
+    std::string name = "Server";
+    int length = this->create_message(buf_message, message, false, name);
     this->message(buf_message, length, s, synch_var, this->channel_name);
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
@@ -259,9 +267,8 @@ void UDPhandler::send_message(uint8_t *buf, int message_length) {
     this->client_addr = backup;
 }
 
-int UDPhandler::create_message(uint8_t *buf_out, std::string &msg, bool error) {
-    std::string server = "Server";
-    MsgPacket message(error ? 0xFE : 0x04, this->global_counter, msg, server);
+int UDPhandler::create_message(uint8_t *buf_out, std::string &msg, bool error, std::string &name) {
+    MsgPacket message(error ? 0xFE : 0x04, this->global_counter, msg, name);
     return message.construct_message(buf_out);
 }
 
@@ -387,7 +394,30 @@ void UDPhandler::change_display_name(uint8_t *buf, bool second) {
     }
 }
 
+int UDPhandler::convert_from_tcp(uint8_t *buf, uint8_t *tcp_buf) {
+
+    std::string message;
+    int i = 0;
+    while (tcp_buf[i] != 0x0d) {
+        message.push_back(static_cast<char>(tcp_buf[i]));
+        i++;
+    }
+
+    std::regex patternFromToIs(R"(FROM\s(.*?)\sIS)");
+    std::smatch matchFromToIs;
+    std::regex_search(message, matchFromToIs, patternFromToIs);
+    std::string name = matchFromToIs[1].str();
+
+    std::regex patternAfterIs(R"(IS\s(.*))");
+    std::smatch matchAfterIs;
+    std::regex_search(message, matchAfterIs, patternAfterIs);
+    std::string msg = matchAfterIs[1].str();
+
+    return this->create_message(buf, msg, false, name);
+}
+
 void logger(sockaddr_in client, const char *type, const char *operation) {
     std::cout << operation << " " << inet_ntoa(client.sin_addr) << ":" << ntohs(client.sin_port) << " | " << type
               << std::endl;
 }
+

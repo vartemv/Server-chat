@@ -19,6 +19,7 @@
 #include <vector>
 #include <regex>
 #include <cstring>
+#include <arpa/inet.h>
 
 struct synch {
     std::mutex mtx;

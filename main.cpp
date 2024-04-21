@@ -4,6 +4,7 @@
 void init(struct sockaddr_in *server_addr, int port, const char * addr);
 
 int main(int argc, char* argv[]) {
+
     ArgumentsHandler ah{};
     ah.get_args(argc, argv);
 

@@ -120,7 +120,7 @@ void TCPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_var
                 perror("accept failed");
                 continue;
             }
-            tp->AddTask(std::bind(&TCPhandler::handleTCP, clientSocket, &tp->busy_threads, s, synch_variables));
+            tp->AddTask(std::bind(&TCPhandler::handleTCP, clientSocket, &tp->busy_threads, s, synch_variables, client));
         }
     }
 

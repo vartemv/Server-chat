@@ -15,8 +15,9 @@ public:
     int client_socket;
     int epoll_fd;
     epoll_event events[1];
+    sockaddr_in client_addr;
 
-    TCPhandler(int s) {
+    TCPhandler(int s, sockaddr_in c) {
         this->channel_name = "general";
         this->client_socket = s;
 
@@ -38,15 +39,17 @@ public:
             exit(EXIT_FAILURE);
         }
 
+        client_addr = c;
+
     }
 
-    static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var);
+    static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client);
 
     void send_buf(uint8_t *buf, int length) const;
 
     void create_message(bool error, const char *msg);
 
-    int convert_from_udp(uint8_t *buf, uint8_t *udp_buf);
+    static int convert_from_udp(uint8_t *buf, uint8_t *tcp_buf);
 
 private:
     int listening_for_incoming_connection(uint8_t *buf, int len);
@@ -63,6 +66,8 @@ private:
     void user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char* action);
 
 };
+
+void logger(sockaddr_in client, const char *type, const char *operation);
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, TCPhandler *tcp);
 
