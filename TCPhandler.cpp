@@ -3,7 +3,8 @@
 //
 #include "TCPhandler.h"
 
-void TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client) {
+void
+TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client) {
 
     TCPhandler tcp(client_socket, client);
 
@@ -143,7 +144,7 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         } else {
             this->create_reply("NOK", "Tried to join to the current channel");
         }
-    } else if (result[0] == "BYE"){
+    } else if (result[0] == "BYE") {
         user_changed_channel(s, synch_var, "left");
     }
 
