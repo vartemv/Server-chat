@@ -109,7 +109,7 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             create_message(true, "Wrong AUTH format");
             return false;
         }
-        logger(this->client_addr, "AUTH", "RECV");
+        tcp_logger(this->client_addr, "AUTH", "RECV");
         this->create_reply("OK", "Authentication is successful");
         this->display_name = result[3];
         this->user_changed_channel(s, synch_var, "joined");
@@ -122,7 +122,7 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             create_message(true, "Wrong MSG format");
             return false;
         }
-        logger(this->client_addr, "MSG", "RECV");
+        tcp_logger(this->client_addr, "MSG", "RECV");
         this->display_name = result[2];
         this->message(buf, length, s, synch_var, this->channel_name);
     } else if (result[0] == "JOIN") {
@@ -134,7 +134,7 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             return false;
         }
         if (result[1] != this->channel_name) {
-            logger(this->client_addr, "JOIN", "RECV");
+            tcp_logger(this->client_addr, "JOIN", "RECV");
             this->user_changed_channel(s, synch_var, "left");
             std::this_thread::sleep_for(std::chrono::milliseconds(30));
             this->channel_name = result[1];
@@ -165,7 +165,7 @@ void TCPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> 
 void TCPhandler::create_reply(const char *status, const char *msg) {
     std::string message;
     message = "REPLY " + std::string(status) + " IS " + std::string(msg) + "\r\n";
-    logger(this->client_addr, "REPLY", "SENT");
+    tcp_logger(this->client_addr, "REPLY", "SENT");
     this->send_string(message);
 }
 
@@ -173,7 +173,7 @@ void TCPhandler::create_message(bool error, const char *msg) {
     std::string message;
     error ? message = "ERR FROM SERVER IS " + std::string(msg) + "\r\n" : message = "MSG FROM SERVER IS " +
                                                                                     std::string(msg) + "\r\n";
-    logger(this->client_addr, "MSG", "SENT");
+    tcp_logger(this->client_addr, "MSG", "SENT");
     this->send_string(message);
 }
 
@@ -239,7 +239,7 @@ int TCPhandler::convert_from_udp(uint8_t *buf, uint8_t *udp_buf) {
     return message.length();
 }
 
-void logger(sockaddr_in client, const char *type, const char *operation) {
+void tcp_logger(sockaddr_in client, const char *type, const char *operation) {
     std::cout << operation << " " << inet_ntoa(client.sin_addr) << ":" << ntohs(client.sin_port) << " | " << type
               << std::endl;
 }

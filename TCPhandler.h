@@ -67,7 +67,7 @@ private:
 
 };
 
-void logger(sockaddr_in client, const char *type, const char *operation);
+void tcp_logger(sockaddr_in client, const char *type, const char *operation);
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, TCPhandler *tcp);
 

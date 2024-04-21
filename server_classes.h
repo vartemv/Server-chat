@@ -30,12 +30,9 @@ public:
 
 class TCPserver : public Server {
 public:
-    int port;
-    const char *addr;
 
-    TCPserver(int p, const char *a) {
-        this->port = p;
-        this->addr = a;
+    TCPserver() {
+
     }
 
     void Initialize(struct sockaddr_in *server_address) override;
@@ -52,14 +49,10 @@ class UDPserver : public Server {
 public:
     int retransmissions;
     int timeout;
-    const char *addr;
-    int port;
 
-    UDPserver(int ret, int t, int p, const char *a) {
+    UDPserver(int ret, int t) {
         this->retransmissions = ret;
         this->timeout = t;
-        this->port = p;
-        this->addr = a;
     }
 
     void Initialize(struct sockaddr_in *server_address) override;

@@ -15,8 +15,8 @@ int main(int argc, char *argv[]) {
 
     init(server_addr, ah.get_port(), ah.get_address());
 
-    UDPserver udp{ah.get_retransmissions(), ah.get_timeout(), ah.get_port(), ah.get_address()};
-    TCPserver tcp{ah.get_port(), ah.get_address()};
+    UDPserver udp{ah.get_retransmissions(), ah.get_timeout()};
+    TCPserver tcp{};
 
     udp.Initialize(server_addr);
     tcp.Initialize(server_addr);
