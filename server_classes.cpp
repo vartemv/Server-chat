@@ -66,7 +66,7 @@ void UDPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_var
                 }
 
                 tp->AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, this->retransmissions, this->timeout,
-                                      &tp->busy_threads, s, synch_variables));
+                                      &tp->busy_threads, s, synch_variables, signal_listener));
             } else {
                 loop = false;
                 break;

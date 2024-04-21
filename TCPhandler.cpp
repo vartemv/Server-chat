@@ -22,7 +22,10 @@ TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, syn
             break;
     }
 
+    end = true;
     sender.join();
+    shutdown(tcp.client_socket, SHUT_RDWR);
+    close(tcp.client_socket);
 }
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, TCPhandler *tcp) {
@@ -31,26 +34,32 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->cv.wait(lock, [&synch_vars] { return synch_vars->ready; });
 
         synch_vars->waiting.lock();
-        UserInfo new_uf = s->top();
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if (!new_uf.tcp) {
-            if (new_uf.channel == tcp->channel_name) {
-                uint8_t buf[1024];
-                int length = TCPhandler::convert_from_udp(buf, new_uf.buf);
-                tcp->send_buf(buf, length);
-            }
-        } else {
-            if (new_uf.tcp_socket != tcp->client_socket && new_uf.channel == tcp->channel_name) {
-                tcp->send_buf(new_uf.buf, new_uf.length);
+        if(!s->empty()) {
+
+            synch_vars->waiting.lock();
+            UserInfo new_uf = s->top();
+            synch_vars->waiting.unlock();
+
+            if (!new_uf.tcp) {
+                if (new_uf.channel == tcp->channel_name) {
+                    uint8_t buf[1024];
+                    int length = TCPhandler::convert_from_udp(buf, new_uf.buf);
+                    tcp->send_buf(buf, length);
+                }
+            } else {
+                if (new_uf.tcp_socket != tcp->client_socket && new_uf.channel == tcp->channel_name) {
+                    tcp->send_buf(new_uf.buf, new_uf.length);
+                }
             }
         }
-
         if (synch_vars->finished == *busy) {
             synch_vars->finished = 0;
             synch_vars->ready = false;
-            s->pop();
+            if(!s->empty())
+                s->pop();
         }
 
         lock.unlock();
@@ -218,7 +227,7 @@ int TCPhandler::convert_from_udp(uint8_t *buf, uint8_t *udp_buf) {
         i++;
     }
 
-    std::cout << display_n << std::endl;
+    //std::cout << display_n << std::endl;
 
     i++;
 
@@ -227,7 +236,7 @@ int TCPhandler::convert_from_udp(uint8_t *buf, uint8_t *udp_buf) {
         i++;
     }
 
-    std::cout << contents << std::endl;
+    //std::cout << contents << std::endl;
 
     std::string message = "MSG FROM " + display_n + " IS " + contents + "\r\n";
 

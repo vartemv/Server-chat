@@ -27,14 +27,14 @@ public:
     int global_counter;
     int client_socket;
     std::vector<int> vec;
-    epoll_event events[1];
+    epoll_event events[2];
     int epoll_fd;
     bool auth;
     sockaddr_in client_addr;
     std::string display_name;
     std::string channel_name;
 
-    UDPhandler(int ret, int t, sockaddr_in client) {
+    UDPhandler(int ret, int t, sockaddr_in client, int kill) {
         this->retransmissions = ret;
         this->timeout_chat = t;
         this->global_counter = 0;
@@ -52,7 +52,7 @@ public:
 
         // setup epoll event
         struct epoll_event ev;
-        ev.events = EPOLLIN;
+        ev.events = EPOLLIN | EPOLLET;
         ev.data.fd = this->client_socket;
 
         // add socket file descriptor to epoll
@@ -62,27 +62,34 @@ public:
             exit(EXIT_FAILURE);
         }
 
+        ev.data.fd = kill;
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, kill, &ev) < 0) {
+            std::cerr << "Unable to add socket to epoll\n";
+            exit(EXIT_FAILURE);
+        }
+
         auth = false;
 
         client_addr = client;
 
         channel_name = "general";
+
     }
 
     static void
     handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout, int *busy,
-              std::stack<UserInfo> *s, synch *synch_var);
+              std::stack<UserInfo> *s, synch *synch_var, int signal_listener);
 
     int create_message(uint8_t *buf_out, std::string &msg, bool error, std::string &name);
 
-    void send_message(uint8_t *buf, int message_length);
+    void send_message(uint8_t *buf, int message_length, bool terminate);
 
     int convert_from_tcp(uint8_t *buf, uint8_t *tcp_buf);
 
 private:
     bool decipher_the_message(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
 
-    void respond_to_auth(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
+    int respond_to_auth(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
 
     void respond_to_join(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var);
 
@@ -107,6 +114,8 @@ private:
     void client_leaving(std::stack<UserInfo> *s, synch *synch_var);
 
     std::string read_channel_name(uint8_t *buf);
+
+    int create_bye(uint8_t *buf);
 
 };
 
