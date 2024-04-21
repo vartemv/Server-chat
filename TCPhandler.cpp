@@ -4,7 +4,8 @@
 #include "TCPhandler.h"
 
 void
-TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client, int signal_listener) {
+TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client,
+                      int signal_listener) {
 
     TCPhandler tcp(client_socket, client, signal_listener);
 
@@ -18,8 +19,7 @@ TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, syn
         int length = tcp.listening_for_incoming_connection(internal_buf, 1024);
         if (length == 0)
             break;
-        if(length == -1)
-        {
+        if (length == -1) {
             tcp.create_bye();
             break;
         }
@@ -48,7 +48,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if(!s->empty()) {
+        if (!s->empty()) {
 
             synch_vars->waiting.lock();
             UserInfo new_uf = s->top();
@@ -69,7 +69,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         if (synch_vars->finished == *busy) {
             synch_vars->finished = 0;
             synch_vars->ready = false;
-            if(!s->empty())
+            if (!s->empty())
                 s->pop();
         }
 
@@ -196,7 +196,7 @@ void TCPhandler::create_message(bool error, const char *msg) {
     this->send_string(message);
 }
 
-void TCPhandler::create_bye(){
+void TCPhandler::create_bye() {
     std::string bye = "BYE\r\n";
     tcp_logger(this->client_addr, "BYE", "SENT");
     this->send_string(bye);

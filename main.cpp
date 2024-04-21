@@ -4,6 +4,7 @@
 int pipefd[2];
 
 void init(struct sockaddr_in *server_addr, int port, const char *addr);
+
 void handle_sigint(int sig);
 
 int main(int argc, char *argv[]) {

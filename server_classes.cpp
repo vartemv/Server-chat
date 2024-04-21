@@ -135,7 +135,8 @@ void TCPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_var
                     continue;
                 }
                 tp->AddTask(
-                        std::bind(&TCPhandler::handleTCP, clientSocket, &tp->busy_threads, s, synch_variables, client, signal_listener));
+                        std::bind(&TCPhandler::handleTCP, clientSocket, &tp->busy_threads, s, synch_variables, client,
+                                  signal_listener));
             } else {
                 loop = false;
                 break;

@@ -49,7 +49,8 @@ public:
 
     }
 
-    static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client,  int signal_listener);
+    static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client,
+                          int signal_listener);
 
     void send_buf(uint8_t *buf, int length) const;
 

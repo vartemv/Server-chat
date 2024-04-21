@@ -453,4 +453,3 @@ void logger(sockaddr_in client, const char *type, const char *operation) {
     std::cout << operation << " " << inet_ntoa(client.sin_addr) << ":" << ntohs(client.sin_port) << " | " << type
               << std::endl;
 }
-

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <future>
 #include <mutex>
@@ -7,49 +8,44 @@
 #include <utility>
 #include <vector>
 
-class ThreadPool
-{
+class ThreadPool {
 public:
-    ThreadPool(const int size) : busy_threads(size), threads(std::vector<std::thread>(size)), shutdown_requested(false)
-    {
-        for (size_t i = 0; i < size; ++i)
-        {
+    ThreadPool(const int size) : busy_threads(size), threads(std::vector<std::thread>(size)),
+                                 shutdown_requested(false) {
+        for (size_t i = 0; i < size; ++i) {
             threads[i] = std::thread(ThreadWorker(this));
         }
     }
 
-    ~ThreadPool()
-    {
+    ~ThreadPool() {
         Shutdown();
     }
 
-    ThreadPool(const ThreadPool&) = delete;
-    ThreadPool(ThreadPool&&)      = delete;
+    ThreadPool(const ThreadPool &) = delete;
 
-    ThreadPool& operator=(const ThreadPool&) = delete;
-    ThreadPool& operator=(ThreadPool&&)      = delete;
+    ThreadPool(ThreadPool &&) = delete;
+
+    ThreadPool &operator=(const ThreadPool &) = delete;
+
+    ThreadPool &operator=(ThreadPool &&) = delete;
 
     // Waits until threads finish their current task and shutdowns the pool
-    void Shutdown()
-    {
+    void Shutdown() {
         {
             std::lock_guard<std::mutex> lock(mutex);
             shutdown_requested = true;
             condition_variable.notify_all();
         }
 
-        for (size_t i = 0; i < threads.size(); ++i)
-        {
-            if (threads[i].joinable())
-            {
+        for (size_t i = 0; i < threads.size(); ++i) {
+            if (threads[i].joinable()) {
                 threads[i].join();
             }
         }
     }
 
-    template <typename F, typename... Args>
-    auto AddTask(F&& f, Args&&... args) -> std::future<decltype(f(args...))>
-    {
+    template<typename F, typename... Args>
+    auto AddTask(F &&f, Args &&... args) -> std::future<decltype(f(args...))> {
 
         auto task_ptr = std::make_shared<std::packaged_task<decltype(f(args...))()>>(
                 std::bind(std::forward<F>(f), std::forward<Args>(args)...));
@@ -66,33 +62,28 @@ public:
         return task_ptr->get_future();
     }
 
-    int QueueSize()
-    {
+    int QueueSize() {
         std::unique_lock<std::mutex> lock(mutex);
         return queue.size();
     }
 
 private:
-    class ThreadWorker
-    {
+    class ThreadWorker {
     public:
-        ThreadWorker(ThreadPool* pool) : thread_pool(pool)
-        {
+        ThreadWorker(ThreadPool *pool) : thread_pool(pool) {
         }
 
-        void operator()()
-        {
+        void operator()() {
             std::unique_lock<std::mutex> lock(thread_pool->mutex);
-            while (!thread_pool->shutdown_requested || (thread_pool->shutdown_requested && !thread_pool->queue.empty()))
-            {
+            while (!thread_pool->shutdown_requested ||
+                   (thread_pool->shutdown_requested && !thread_pool->queue.empty())) {
                 thread_pool->busy_threads--;
                 thread_pool->condition_variable.wait(lock, [this] {
                     return this->thread_pool->shutdown_requested || !this->thread_pool->queue.empty();
                 });
                 thread_pool->busy_threads++;
 
-                if (!this->thread_pool->queue.empty())
-                {
+                if (!this->thread_pool->queue.empty()) {
 
                     auto func = thread_pool->queue.front();
 
@@ -106,7 +97,7 @@ private:
         }
 
     private:
-        ThreadPool* thread_pool;
+        ThreadPool *thread_pool;
     };
 
 public:
