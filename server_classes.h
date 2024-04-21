@@ -25,7 +25,7 @@ class Server {
 public:
     virtual void Initialize(struct sockaddr_in *server_address) = 0;
 
-    virtual void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) = 0;
+    virtual void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables, int signal_listener) = 0;
 };
 
 class TCPserver : public Server {
@@ -37,7 +37,7 @@ public:
 
     void Initialize(struct sockaddr_in *server_address) override;
 
-    void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) override;
+    void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables, int signal_listener) override;
 
     void Destroy();
 
@@ -57,7 +57,7 @@ public:
 
     void Initialize(struct sockaddr_in *server_address) override;
 
-    void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) override;
+    void Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables, int signal_listener) override;
 
     void Destroy();
 

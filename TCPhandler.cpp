@@ -76,7 +76,6 @@ int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
                     std::cerr << "recvfrom failed. errno: " << errno << '\n';
                     continue;
                 } else if (n == 0) {
-                    std::cout << "Connection is closed by client" << std::endl;
                     return 0;
                 } else if (n > 0) {
                     return n;
@@ -98,8 +97,6 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
     for (std::string element; std::getline(iss, element, ' ');) {
         result.push_back(element);
     }
-
-    std::cout << out_str << std::endl;
 
     if (result[0] == "AUTH") {
         std::regex e("^AUTH .{1,20} AS .{1,20} USING .{1,6}$");

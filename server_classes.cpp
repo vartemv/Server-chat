@@ -15,9 +15,7 @@ void UDPserver::Initialize(struct sockaddr_in *server_address) {
     }
 }
 
-void UDPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) {
-
-
+void UDPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables, int signal_listener) {
     int epoll_fd = epoll_create1(0);
     if (epoll_fd < 0) {
         std::cerr << "Unable to create epoll instance\n";
@@ -25,47 +23,56 @@ void UDPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_var
     }
 
     epoll_event event;
-    event.events = EPOLLIN;
+    event.events = EPOLLIN | EPOLLET;
     event.data.fd = this->sockFD;
 
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, UDPserver::sockFD, &event) < 0) {
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, this->sockFD, &event) < 0) {
         std::cerr << "Unable to add socket to epoll\n";
         exit(EXIT_FAILURE);
     }
 
-    struct epoll_event events[1];
-    while (true) {
-        int num_events = epoll_wait(epoll_fd, events, 1, 5000); // 5 seconds timeout
+    event.data.fd = signal_listener;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, signal_listener, &event) < 0) {
+        std::cerr << "Unable to add socket to epoll\n";
+        exit(EXIT_FAILURE);
+    }
+
+    struct epoll_event events[2];
+
+    bool loop = true;
+    while (loop) {
+        int num_events = epoll_wait(epoll_fd, events, 2, -1); // 5 seconds timeout
 
         if (num_events < 0) {
             std::cerr << "Error in epoll_wait\n";
             exit(EXIT_FAILURE);
         }
 
-
         for (int i = 0; i < num_events; ++i) {
-            //std::cout <<"Main port"<<std::endl;
-            uint8_t buf[1024];
-            sockaddr_in client_addr;
-            if (!(events[i].events & EPOLLIN))
-                continue;
+            if (events[i].data.fd == this->sockFD) {
+                uint8_t buf[1024];
+                sockaddr_in client_addr;
+                if (!(events[i].events & EPOLLIN))
+                    continue;
 
-            socklen_t len = sizeof(client_addr);
+                socklen_t len = sizeof(client_addr);
 
-            int n = recvfrom(this->sockFD, buf, 1024,
-                             0, (struct sockaddr *) &client_addr, &len);
+                int n = recvfrom(this->sockFD, buf, 1024,
+                                 0, (struct sockaddr *) &client_addr, &len);
 
-            if (n == -1) {
-                std::cerr << "recvfrom failed. errno: " << errno << '\n';
-                continue;
+                if (n == -1) {
+                    std::cerr << "recvfrom failed. errno: " << errno << '\n';
+                    continue;
+                }
+
+                tp->AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, this->retransmissions, this->timeout,
+                                      &tp->busy_threads, s, synch_variables));
+            } else {
+                loop = false;
+                break;
             }
-
-
-            tp->AddTask(std::bind(&UDPhandler::handleUDP, buf, client_addr, n, this->retransmissions, this->timeout,
-                                  &tp->busy_threads, s, synch_variables));
         }
     }
-    tp->Shutdown();
 }
 
 void UDPserver::Destroy() {
@@ -84,7 +91,7 @@ void TCPserver::Initialize(struct sockaddr_in *server_address) {
     }
 }
 
-void TCPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables) {
+void TCPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_variables, int signal_listener) {
     struct sockaddr_in client;
     listen(this->sockFD, 5);
 
@@ -95,7 +102,7 @@ void TCPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_var
     }
 
     epoll_event event;
-    event.events = EPOLLIN;
+    event.events = EPOLLIN | EPOLLET;
     event.data.fd = this->sockFD;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, this->sockFD, &event) < 0) {
@@ -103,29 +110,38 @@ void TCPserver::Listen(ThreadPool *tp, std::stack<UserInfo> *s, synch *synch_var
         exit(EXIT_FAILURE);
     }
 
-    struct epoll_event events[1];
+    event.data.fd = signal_listener;
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, signal_listener, &event) < 0) {
+        std::cerr << "Unable to add socket to epoll\n";
+        exit(EXIT_FAILURE);
+    }
 
-    while (true) {
-        int num_events = epoll_wait(epoll_fd, events, 1, 5000); // 5 seconds timeout
+    struct epoll_event events[2];
 
+    bool loop = true;
+    while (loop) {
+        int num_events = epoll_wait(epoll_fd, events, 2, -1); // 5 seconds timeout
         if (num_events < 0) {
             std::cerr << "Error in epoll_wait\n";
             exit(EXIT_FAILURE);
         }
 
         for (int i = 0; i < num_events; ++i) {
-            socklen_t len = sizeof(client);
-            int clientSocket = accept(this->sockFD, (struct sockaddr *) &client, &len);
-            if (clientSocket < 0) {
-                perror("accept failed");
-                continue;
+            if (events[i].data.fd == this->sockFD) {
+                socklen_t len = sizeof(client);
+                int clientSocket = accept(this->sockFD, (struct sockaddr *) &client, &len);
+                if (clientSocket < 0) {
+                    perror("accept failed");
+                    continue;
+                }
+                tp->AddTask(
+                        std::bind(&TCPhandler::handleTCP, clientSocket, &tp->busy_threads, s, synch_variables, client));
+            } else {
+                loop = false;
+                break;
             }
-            tp->AddTask(std::bind(&TCPhandler::handleTCP, clientSocket, &tp->busy_threads, s, synch_variables, client));
         }
     }
-
-    tp->Shutdown();
-
 }
 
 void TCPserver::Destroy() {

@@ -20,6 +20,7 @@
 #include <regex>
 #include <cstring>
 #include <arpa/inet.h>
+#include <sys/signalfd.h>
 
 struct synch {
     std::mutex mtx;
