@@ -3,6 +3,12 @@
 
 void init(struct sockaddr_in *server_addr, int port, const char *addr);
 
+void signalHandler(int signum) {
+    std::cout << "Interrupt signal (" << signum << ") received.\n";
+    exit(signum);
+}
+
+
 int main(int argc, char *argv[]) {
 
     ArgumentsHandler ah{};
@@ -15,6 +21,7 @@ int main(int argc, char *argv[]) {
 
     init(server_addr, ah.get_port(), ah.get_address());
 
+    signal(SIGINT, signalHandler);
     UDPserver udp{ah.get_retransmissions(), ah.get_timeout()};
     TCPserver tcp{};
 
