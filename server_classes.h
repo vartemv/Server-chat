@@ -31,9 +31,9 @@ public:
 class TCPserver : public Server {
 public:
     int port;
-    const char* addr;
+    const char *addr;
 
-    TCPserver(int p, const char* a){
+    TCPserver(int p, const char *a) {
         this->port = p;
         this->addr = a;
     }
@@ -52,10 +52,10 @@ class UDPserver : public Server {
 public:
     int retransmissions;
     int timeout;
-    const char* addr;
+    const char *addr;
     int port;
 
-    UDPserver(int ret, int t, int p, const char* a){
+    UDPserver(int ret, int t, int p, const char *a) {
         this->retransmissions = ret;
         this->timeout = t;
         this->port = p;

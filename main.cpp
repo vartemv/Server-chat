@@ -1,9 +1,9 @@
 #include "server_classes.h"
 #include "ArgumentsHandler.h"
 
-void init(struct sockaddr_in *server_addr, int port, const char * addr);
+void init(struct sockaddr_in *server_addr, int port, const char *addr);
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
     ArgumentsHandler ah{};
     ah.get_args(argc, argv);
@@ -15,8 +15,8 @@ int main(int argc, char* argv[]) {
 
     init(server_addr, ah.get_port(), ah.get_address());
 
-    UDPserver udp {ah.get_retransmissions(), ah.get_timeout(), ah.get_port(), ah.get_address()};
-    TCPserver tcp {ah.get_port(), ah.get_address()};
+    UDPserver udp{ah.get_retransmissions(), ah.get_timeout(), ah.get_port(), ah.get_address()};
+    TCPserver tcp{ah.get_port(), ah.get_address()};
 
     udp.Initialize(server_addr);
     tcp.Initialize(server_addr);
@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
     delete server_addr;
 }
 
-void init(struct sockaddr_in *server_addr, int port, const char * addr){
+void init(struct sockaddr_in *server_addr, int port, const char *addr) {
     memset(server_addr, 0, sizeof(*server_addr));
     server_addr->sin_family = AF_INET;
     server_addr->sin_port = htons(port);

@@ -20,7 +20,6 @@
 #include "synch.h"
 
 
-
 class UDPhandler {
 public:
     int retransmissions;
@@ -70,9 +69,11 @@ public:
         channel_name = "general";
     }
 
-    static void handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout, int *busy, std::stack<UserInfo> *s, synch *synch_var);
+    static void
+    handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, int retransmissions, int timeout, int *busy,
+              std::stack<UserInfo> *s, synch *synch_var);
 
-    int create_message(uint8_t *buf_out, std::string &msg, bool error,std::string &name);
+    int create_message(uint8_t *buf_out, std::string &msg, bool error, std::string &name);
 
     void send_message(uint8_t *buf, int message_length);
 
@@ -111,7 +112,7 @@ private:
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler *udp);
 
-void logger(sockaddr_in client, const char * type, const char* operation);
+void logger(sockaddr_in client, const char *type, const char *operation);
 
 
 #endif //IPK_SERVER_UDPHANDLER_H

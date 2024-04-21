@@ -63,7 +63,7 @@ private:
     void message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
                  std::string &channel);
 
-    void user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char* action);
+    void user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char *action);
 
 };
 

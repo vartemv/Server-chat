@@ -6,7 +6,7 @@
 #include "ArgumentsHandler.h"
 
 void ArgumentsHandler::print_help() {
-    std::cout <<R"(|Argument | Default values | Type
+    std::cout << R"(|Argument | Default values | Type
 ____________________________________________________________________________________________________________
 | -l      | 127.0.0.1      | IP address                | Server listening IP address for welcome sockets    |
 | -p      | 47356          | uint16                    | Server listening port for welcome sockets          |
@@ -94,6 +94,6 @@ int ArgumentsHandler::get_timeout() {
     return this->timeout;
 }
 
-char* ArgumentsHandler::get_address() {
+char *ArgumentsHandler::get_address() {
     return this->address;
 }
