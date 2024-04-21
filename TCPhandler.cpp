@@ -4,9 +4,9 @@
 #include "TCPhandler.h"
 
 void
-TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client) {
+TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client, int signal_listener) {
 
-    TCPhandler tcp(client_socket, client);
+    TCPhandler tcp(client_socket, client, signal_listener);
 
     bool end = false;
 
@@ -18,11 +18,22 @@ TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, syn
         int length = tcp.listening_for_incoming_connection(internal_buf, 1024);
         if (length == 0)
             break;
+        if(length == -1)
+        {
+            tcp.create_bye();
+            break;
+        }
         if (!tcp.decipher_the_message(internal_buf, length, s, synch_var))
             break;
     }
 
     end = true;
+    {
+        std::lock_guard<std::mutex> lock(synch_var->mtx);
+        synch_var->ready = true;
+    }
+    synch_var->cv.notify_all();
+
     sender.join();
     shutdown(tcp.client_socket, SHUT_RDWR);
     close(tcp.client_socket);
@@ -71,7 +82,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
 
 int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
 
-    int event_count = epoll_wait(this->epoll_fd, this->events, 1, -1);
+    int event_count = epoll_wait(this->epoll_fd, this->events, 2, -1);
 
     if (event_count == -1) {
         perror("epoll_wait");
@@ -79,7 +90,7 @@ int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
         exit(EXIT_FAILURE);
     } else if (event_count > 0) {
         for (int j = 0; j < event_count; j++) {
-            if (events[j].events & EPOLLIN) { // check if EPOLLIN event has occurred
+            if (events[j].data.fd == this->client_socket) { // check if EPOLLIN event has occurred
                 int n = recv(this->client_socket, buf, len, 0);
                 if (n == -1) {
                     std::cerr << "recvfrom failed. errno: " << errno << '\n';
@@ -89,6 +100,8 @@ int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
                 } else if (n > 0) {
                     return n;
                 }
+            } else {
+                return -1;
             }
         }
     }
@@ -183,6 +196,12 @@ void TCPhandler::create_message(bool error, const char *msg) {
     this->send_string(message);
 }
 
+void TCPhandler::create_bye(){
+    std::string bye = "BYE\r\n";
+    tcp_logger(this->client_addr, "BYE", "SENT");
+    this->send_string(bye);
+}
+
 void TCPhandler::send_string(std::string &msg) const {
     const char *message = msg.c_str();
     size_t bytes_left = msg.size();
@@ -227,16 +246,12 @@ int TCPhandler::convert_from_udp(uint8_t *buf, uint8_t *udp_buf) {
         i++;
     }
 
-    //std::cout << display_n << std::endl;
-
     i++;
 
     while (udp_buf[i] != 0x00) {
         contents.push_back(static_cast<char>(udp_buf[i]));
         i++;
     }
-
-    //std::cout << contents << std::endl;
 
     std::string message = "MSG FROM " + display_n + " IS " + contents + "\r\n";
 

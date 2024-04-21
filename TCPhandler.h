@@ -14,10 +14,10 @@ public:
     std::string display_name;
     int client_socket;
     int epoll_fd;
-    epoll_event events[1];
+    epoll_event events[2];
     sockaddr_in client_addr;
 
-    TCPhandler(int s, sockaddr_in c) {
+    TCPhandler(int s, sockaddr_in c, int kill) {
         this->channel_name = "general";
         this->client_socket = s;
 
@@ -39,11 +39,17 @@ public:
             exit(EXIT_FAILURE);
         }
 
+        ev.data.fd = kill;
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, kill, &ev) < 0) {
+            std::cerr << "Unable to add socket to epoll\n";
+            exit(EXIT_FAILURE);
+        }
+
         client_addr = c;
 
     }
 
-    static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client);
+    static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client,  int signal_listener);
 
     void send_buf(uint8_t *buf, int length) const;
 
@@ -59,6 +65,8 @@ private:
     void send_string(std::string &msg) const;
 
     void create_reply(const char *status, const char *msg);
+
+    void create_bye();
 
     void message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,
                  std::string &channel);
