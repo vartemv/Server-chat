@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     init(server_addr, ah.get_port(), ah.get_address());
 
     signal(SIGINT, handle_sigint);
-    pipe(pipefd);
+    int p = pipe(pipefd);
 
     UDPserver udp{ah.get_retransmissions(), ah.get_timeout()};
     TCPserver tcp{};
@@ -50,7 +50,7 @@ void init(struct sockaddr_in *server_addr, int port, const char *addr) {
 }
 
 void handle_sigint(int sig) {
-    write(pipefd[1], "X", 1);
+    ssize_t i = write(pipefd[1], "X", 1);
 }
 
 
