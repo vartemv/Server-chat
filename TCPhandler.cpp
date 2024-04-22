@@ -13,7 +13,7 @@ TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, syn
 
     std::thread sender(read_queue, s, &end, synch_var, busy, &tcp);
 
-    uint8_t internal_buf[1024];
+    uint8_t internal_buf[2048];
 
     while (true) {
         int length = tcp.listening_for_incoming_connection(internal_buf, 1024);
@@ -26,6 +26,9 @@ TCPhandler::handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, syn
         if (!tcp.decipher_the_message(internal_buf, length, s, synch_var))
             break;
     }
+
+    if (synch_var->usernames.find(tcp.user_n) != synch_var->usernames.end())
+        synch_var->usernames.erase(tcp.user_n);
 
     end = true;
     {
@@ -48,7 +51,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if (!s->empty()) {
+        if (!s->empty() && tcp->auth) {
 
             synch_vars->waiting.lock();
             UserInfo new_uf = s->top();
@@ -56,8 +59,8 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
 
             if (!new_uf.tcp) {
                 if (new_uf.channel == tcp->channel_name) {
-                    uint8_t buf[1024];
-                    int length = TCPhandler::convert_from_udp(buf, new_uf.buf);
+                    uint8_t buf[3048];
+                    int length = tcp->convert_from_udp(buf, new_uf.buf);
                     tcp->send_buf(buf, length);
                 }
             } else {
@@ -120,18 +123,39 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         result.push_back(element);
     }
 
+    if (!this->auth) {
+        if (result[0] != "AUTH") {
+            if (result[0] != "BYE") {
+                if (result[0] != "ERR") {
+                    this->create_message(true, "You should log-in before doing anything else");
+                    return true;
+                }
+            }
+        }
+    }
+
     if (result[0] == "AUTH") {
-        std::regex e("^AUTH .{1,20} AS .{1,20} USING .{1,6}$");
+        std::regex e("^AUTH .{1,20} AS .{1,20} USING .{1,128}$");
         if (!std::regex_match(out_str, e)) {
             std::string mes = "Wrong AUTH format";
             std::cout << mes << std::endl;
             create_message(true, "Wrong AUTH format");
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            this->create_bye();
             return false;
         }
+        synch_var->un.lock();
+        bool exists = username_already_exists(result[1], synch_var);
+        synch_var->un.unlock();
         tcp_logger(this->client_addr, "AUTH", "RECV");
-        this->create_reply("OK", "Authentication is successful");
-        this->display_name = result[3];
-        this->user_changed_channel(s, synch_var, "joined");
+        if (exists) {
+            this->create_reply("NOK", "Username already exists");
+        } else {
+            this->create_reply("OK", "Authentication is successful");
+            this->display_name = result[3];
+            this->user_changed_channel(s, synch_var, "joined");
+            this->auth = true;
+        }
 
     } else if (result[0] == "MSG") {
         std::regex e("^MSG FROM .{1,20} IS .{1,1400}$");
@@ -139,6 +163,8 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             std::string mes = "Wrong MSG format";
             std::cout << mes << std::endl;
             create_message(true, "Wrong MSG format");
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            this->create_bye();
             return false;
         }
         tcp_logger(this->client_addr, "MSG", "RECV");
@@ -149,7 +175,9 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         if (!std::regex_match(out_str, e)) {
             std::string mes = "Wrong JOIN format";
             create_message(true, mes.c_str());
-            this->create_reply("NOK", "Join wasn't successful");
+            create_message(true, "Wrong JOIN format");
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            this->create_bye();
             return false;
         }
         if (result[1] != this->channel_name) {
@@ -164,7 +192,24 @@ bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
             this->create_reply("NOK", "Tried to join to the current channel");
         }
     } else if (result[0] == "BYE") {
-        user_changed_channel(s, synch_var, "left");
+        tcp_logger(this->client_addr, "BYE", "RECV");
+        if (this->auth) {
+            user_changed_channel(s, synch_var, "left");
+        }
+        return false;
+    } else if (result[0] == "ERR") {
+        tcp_logger(this->client_addr, "ERR", "RECV");
+        if (this->auth) {
+            user_changed_channel(s, synch_var, "left");
+        }
+        this->create_bye();
+        return false;
+    } else {
+        tcp_logger(this->client_addr, "UNDEFINED", "RECV");
+        this->create_message(true, "Unknown command");
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        this->create_bye();
+        return false;
     }
 
     return true;
@@ -263,4 +308,14 @@ int TCPhandler::convert_from_udp(uint8_t *buf, uint8_t *udp_buf) {
 void tcp_logger(sockaddr_in client, const char *type, const char *operation) {
     std::cout << operation << " " << inet_ntoa(client.sin_addr) << ":" << ntohs(client.sin_port) << " | " << type
               << std::endl;
+}
+
+bool TCPhandler::username_already_exists(std::string &username, synch *synch_vars) {
+    if (!synch_vars->usernames.empty()) {
+        if (synch_vars->usernames.find(username) != synch_vars->usernames.end())
+            return true;
+    }
+    synch_vars->usernames.insert(username);
+    this->user_n = username;
+    return false;
 }

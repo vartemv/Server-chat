@@ -16,6 +16,8 @@ public:
     int epoll_fd;
     epoll_event events[2];
     sockaddr_in client_addr;
+    bool auth;
+    std::string user_n;
 
     TCPhandler(int s, sockaddr_in c, int kill) {
         this->channel_name = "general";
@@ -47,6 +49,7 @@ public:
 
         client_addr = c;
 
+        auth = false;
     }
 
     static void handleTCP(int client_socket, int *busy, std::stack<UserInfo> *s, synch *synch_var, sockaddr_in client,
@@ -56,7 +59,7 @@ public:
 
     void create_message(bool error, const char *msg);
 
-    static int convert_from_udp(uint8_t *buf, uint8_t *tcp_buf);
+    int convert_from_udp(uint8_t *buf, uint8_t *tcp_buf);
 
 private:
     int listening_for_incoming_connection(uint8_t *buf, int len);
@@ -74,10 +77,14 @@ private:
 
     void user_changed_channel(std::stack<UserInfo> *s, synch *synch_var, const char *action);
 
+    bool username_already_exists(std::string &username, synch *synch_vars);
+
 };
 
 void tcp_logger(sockaddr_in client, const char *type, const char *operation);
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, TCPhandler *tcp);
+
+
 
 #endif //IPK_SERVER_TCPHANDLER_H

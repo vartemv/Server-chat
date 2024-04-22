@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     ArgumentsHandler ah{};
     ah.get_args(argc, argv);
 
-    ThreadPool tp{20};
+    ThreadPool tp{ah.get_threads()};
     std::stack<UserInfo> s;
     synch synch_variables(0);
     struct sockaddr_in *server_addr = new sockaddr_in;

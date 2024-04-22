@@ -21,20 +21,19 @@
 #include <cstring>
 #include <arpa/inet.h>
 #include <sys/signalfd.h>
+#include <unordered_set>
 
 struct synch {
     std::mutex mtx;
-    std::mutex stack;
-    std::mutex sending;
     std::mutex waiting;
+    std::mutex un;
     bool ready;
-    bool waiting_b;
     std::condition_variable cv;
     std::condition_variable cv2;
     int finished;
-    std::string check = "Hello";
+    std::unordered_set<std::string> usernames;
 
-    synch(int b) : finished(b), ready(false), waiting_b(false) {};
+    explicit synch(int b) : finished(b), ready(false){};
 };
 
 struct UserInfo {

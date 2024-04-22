@@ -20,11 +20,14 @@ public:
 
     char *get_address();
 
+    int get_threads();
+
 private:
     int timeout;
     int port;
     char *address;
     int retransmissions;
+    int number_of_threads;
 
     static void print_help();
 };

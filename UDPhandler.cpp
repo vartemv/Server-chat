@@ -12,10 +12,11 @@ void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, in
 
     std::thread sender(read_queue, s, &end, synch_var, busy, &udp);
 
-    uint8_t internal_buf[1024];
+    uint8_t internal_buf[2048];
     logger(udp.client_addr, "AUTH", "RECV");
     udp.send_confirm(buf);
     int result = udp.respond_to_auth(buf, length, s, synch_var);
+
     if (result != -1) {
         while (true) {
             int length_internal = udp.wait_for_the_incoming_connection(internal_buf);
@@ -30,6 +31,9 @@ void UDPhandler::handleUDP(uint8_t *buf, sockaddr_in client_addr, int length, in
             }
         }
     }
+
+    if (synch_var->usernames.find(udp.user_n) != synch_var->usernames.end())
+        synch_var->usernames.erase(udp.user_n);
 
     end = true;
     {
@@ -51,7 +55,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
         synch_vars->finished++;
         synch_vars->waiting.unlock();
 
-        if (!s->empty()) {
+        if (!s->empty() && udp->auth) {
 
             synch_vars->waiting.lock();
             UserInfo new_uf = s->top();
@@ -59,8 +63,8 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
 
             if (new_uf.tcp) {
                 if (new_uf.channel == udp->channel_name) {
-                    uint8_t buf[1024];
-                    int length = udp->UDPhandler::convert_from_tcp(buf, new_uf.buf);
+                    uint8_t buf[3048];
+                    int length = udp->convert_from_tcp(buf, new_uf.buf);
                     udp->send_message(buf, length, false);
                 }
             } else {
@@ -75,7 +79,6 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
             if (!s->empty())
                 s->pop();
         }
-
         lock.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         lock.lock();
@@ -87,8 +90,14 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
     if (!this->auth) {
         if (buf[0] != 0x02) {
             if (buf[0] != 0xFF) {
-                std::cout << "Client have to sign in before doing anything" << std::endl;
-                return true;
+                if (buf[0] != 0xFE) {
+                    uint8_t buf_int[1024];
+                    std::string message = "You should log-in before doing anything else";
+                    std::string name = "Server";
+                    int length = this->create_message(buf_int, message, false, name);
+                    this->send_message(buf_int, length, false);
+                    return true;
+                }
             }
         }
     }
@@ -99,38 +108,47 @@ bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserI
         case 0x02://AUTH
             logger(this->client_addr, "AUTH", "RECV");
             send_confirm(buf);
-            if (!this->auth)
+            if (!this->auth) {
                 respond_to_auth(buf, length, s, synch_var);
-            else
-                std::cout << "Already authed" << std::endl;
-
+            } else {
+                uint8_t buf_err[1024];
+                std::string message = "Already authed";
+                std::string name = "Server";
+                int length_err = this->create_message(buf_err, message, true, name);
+                this->send_message(buf_err, length_err, false);
+            }
             break;
         case 0x03://JOIN
             logger(this->client_addr, "JOIN", "RECV");
             send_confirm(buf);
             respond_to_join(buf, length, s, synch_var);
-
             break;
         case 0x04://MSG
             logger(this->client_addr, "MSG", "RECV");
             send_confirm(buf);
             this->message(buf, length, s, synch_var, this->channel_name);
-
             break;
         case 0xFF://BYE
-            //std::cout << "Got bye" << std::endl;
-            this->client_leaving(s, synch_var);
+            if (this->auth) {
+                this->client_leaving(s, synch_var);
+            }
             logger(this->client_addr, "BYE", "RECV");
             send_confirm(buf);
-
             return false;
         case 0xFE://ERR
-            this->client_leaving(s, synch_var);
+            if (this->auth) {
+                this->client_leaving(s, synch_var);
+            }
             logger(this->client_addr, "ERR", "RECV");
             send_confirm(buf);
             return false;
         default:
-            std::cout << "Unknown" << std::endl;
+            uint8_t buf[1024];
+            std::string message = "Unknown instruction";
+            std::string name = "Server";
+            int length_err = this->create_message(buf, message, true, name);
+            this->send_message(buf, length_err, false);
+            return false;
     }
     return true;
 }
@@ -139,31 +157,42 @@ int UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<Use
 
     bool valid_message = true;
 
-    if (buf[0] != 0x02) {
-        std::cerr << "Client have to sign in before doing anything" << std::endl;
-        valid_message = false;
-    } else if (buf[0] == 0xFF) {
+    if (buf[0] == 0xFF) {
         return -1;
+    }
+    if (buf[0] != 0x02) {
+        uint8_t buf_int[1024];
+        std::string message = "You should log-in before doing anything else";
+        std::string name = "Server";
+        int length = this->create_message(buf_int, message, false, name);
+        this->send_message(buf_int, length, false);
+        return 0;
     }
 
     if (!this->buffer_validation(buf, message_length, 3, 7, 3))
         valid_message = false;
 
     if (valid_message) {
+        synch_var->un.lock();
+        bool exists = username_exists(buf, synch_var);
+        synch_var->un.unlock();
+        if (!exists) {
+            this->change_display_name(buf, true);
+            std::string success = "Authentication is succesful";
+            send_reply(buf, success, true);
 
-        this->change_display_name(buf, true);
-        std::string success = "Authentication is succesful";
-        send_reply(buf, success, true);
-
-        std::stringstream ss;
-        ss << this->display_name << " has joined general.";
-        std::string message = ss.str();
-        uint8_t buf_message[1024];
-        std::string name = "Server";
-        int length = this->create_message(buf_message, message, false, name);
-        this->message(buf_message, length, s, synch_var, this->channel_name);
-
-        this->auth = true;
+            std::stringstream ss;
+            ss << this->display_name << " has joined general.";
+            std::string message = ss.str();
+            uint8_t buf_message[1024];
+            std::string name = "Server";
+            int length = this->create_message(buf_message, message, false, name);
+            this->message(buf_message, length, s, synch_var, this->channel_name);
+            this->auth = true;
+        } else {
+            std::string failure = "Username already exists";
+            send_reply(buf, failure, false);
+        }
     } else {
         std::string failure = "Authentication is not succesful";
         send_reply(buf, failure, false);
@@ -230,7 +259,6 @@ void UDPhandler::client_leaving(std::stack<UserInfo> *s, synch *synch_var) {
     std::stringstream ss;
     ss << this->display_name << " has left " << this->channel_name << ".";
     std::string message = ss.str();
-    //std::cout << message << std::endl;
     uint8_t buf_message[1024];
     std::string name = "Server";
     int length = this->create_message(buf_message, message, false, name);
@@ -452,4 +480,21 @@ int UDPhandler::convert_from_tcp(uint8_t *buf, uint8_t *tcp_buf) {
 void logger(sockaddr_in client, const char *type, const char *operation) {
     std::cout << operation << " " << inet_ntoa(client.sin_addr) << ":" << ntohs(client.sin_port) << " | " << type
               << std::endl;
+}
+
+bool UDPhandler::username_exists(uint8_t *buf, synch *synch_vars) {
+    std::string username;
+    int i = 3;
+    while (buf[i] != 0x00) {
+        username.push_back(static_cast<char>(buf[i]));
+        i++;
+    }
+
+    if (!synch_vars->usernames.empty()) {
+        if (synch_vars->usernames.find(username) != synch_vars->usernames.end())
+            return true;
+    }
+    synch_vars->usernames.insert(username);
+    this->user_n = username;
+    return false;
 }

@@ -33,6 +33,7 @@ public:
     sockaddr_in client_addr;
     std::string display_name;
     std::string channel_name;
+    std::string user_n;
 
     UDPhandler(int ret, int t, sockaddr_in client, int kill) {
         this->retransmissions = ret;
@@ -118,11 +119,14 @@ private:
 
     int create_bye(uint8_t *buf);
 
+    bool username_exists(uint8_t *buf, synch *synch_vars);
+
 };
 
 void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int *busy, UDPhandler *udp);
 
 void logger(sockaddr_in client, const char *type, const char *operation);
+
 
 
 #endif //IPK_SERVER_UDPHANDLER_H
