@@ -209,29 +209,34 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
 
     if (valid) {
         this->change_display_name(buf, true);
-        std::string success = "Join is succesful";
-        send_reply(buf, success, true);
 
-        std::stringstream ss;
-        ss << this->display_name << " has left " << this->channel_name << ".";
-        std::string message = ss.str();
-        uint8_t buf_message[1024];
-        std::string name = "Server";
-        int length = this->create_message(buf_message, message, false, name);
-        this->message(buf_message, length, s, synch_var, this->channel_name);
+        std::string new_channel = this->read_channel_name(buf);
+        if(new_channel != this->channel_name) {
+            std::string success = "Join is successful";
+            send_reply(buf, success, true);
+            std::stringstream ss;
+            ss << this->display_name << " has left " << this->channel_name << ".";
+            std::string message = ss.str();
+            uint8_t buf_message[1024];
+            std::string name = "Server";
+            int length = this->create_message(buf_message, message, false, name);
+            this->message(buf_message, length, s, synch_var, this->channel_name);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-        memset(buf_message, 0, 1024);
-        std::stringstream joined;
-        this->channel_name = this->read_channel_name(buf);
-        joined << this->display_name << " has joined " << this->channel_name << ".";
-        std::string message_new = joined.str();
-        length = this->create_message(buf_message, message_new, false, name);
-        this->message(buf_message, length, s, synch_var, this->channel_name);
-
+            memset(buf_message, 0, 1024);
+            std::stringstream joined;
+            this->channel_name = this->read_channel_name(buf);
+            joined << this->display_name << " has joined " << this->channel_name << ".";
+            std::string message_new = joined.str();
+            length = this->create_message(buf_message, message_new, false, name);
+            this->message(buf_message, length, s, synch_var, this->channel_name);
+        }else{
+            std::string failure = "Join isn't successful";
+            send_reply(buf, failure, false);
+        }
     } else {
-        std::string failure = "Join is not succesful";
+        std::string failure = "Join format is wrong";
         send_reply(buf, failure, false);
     }
 }
@@ -423,7 +428,7 @@ bool UDPhandler::buffer_validation(uint8_t *buf, int message_length, int start_p
             ++count;
         }
 
-        if (i >= message_length || buf[i] != 0x00 || count < third_limit) {
+        if (i >= message_length || buf[i] != 0x00 || count < 1) {
             return false;
         }
     }

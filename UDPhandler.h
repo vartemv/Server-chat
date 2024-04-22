@@ -109,7 +109,7 @@ private:
 
 
     bool buffer_validation(uint8_t *buf, int message_length, int start_position, int minimal_length,
-                           int amount_of_fields = 2, int first_limit = 20, int second_limit = 20, int third_limit = 5);
+                           int amount_of_fields = 2, int first_limit = 20, int second_limit = 20, int third_limit = 128);
 
     void change_display_name(uint8_t *buf, bool second);
 

@@ -7,12 +7,11 @@ This is a simple chat application written in C++.
 - [IPK - first project - Client-chat](#ipk---first-project---client-chat)
     - [Theory](#theory)
     - [Implementation](#implementation)
-        - [UDP communication](#udp-communication)
-            - [Message confirmation tracking](#message-confirmation-tracking)
-        - [TCP communication](#tcp-communication)
+        - [Overall logic](#overall-logic)
+        - [Message broadcasting](#message-broadcasting)
+        - [Packets](#packets-for-udp)
     - [Testing](#testing)
-        - [UDP tests](#udp-tests)
-        - [TCP tests](#tcp-tests)
+    - [Bibliography](#bibliography)
 
 # Theory
 
@@ -43,9 +42,12 @@ This is a simple chat application written in C++.
 ***
 
 # Implementation
+
+## Overall logic
+
 ##### More detailed graphs can be found in doxy_doc, generated using Doxygen, on my repository
 
-![uml_ipk2_light.png](img/uml_ipk2_light.png)
+![uml_ipk2_light.png](img/uml_ipk22_light.png)
 
 Program begins by parsing command line arguments.
 
@@ -53,6 +55,7 @@ Program begins by parsing command line arguments.
 ArgumentsHandler ah{};
 ah.get_args(argc, argv);
 ```
+
 Then we initialize necessary values, and create instances of UDPserver and TCPserver.
 
 ```cpp
@@ -61,6 +64,7 @@ TCPserver tcp{};
 udp.Initialize(server_addr);
 tcp.Initialize(server_addr);
 ```
+
 Then we start to wait for incoming connections, creating two threads.
 
 ```cpp
@@ -68,3 +72,54 @@ std::thread tcpThread(&TCPserver::Listen, &tcp, &tp, &s, &synch_variables, pipef
 std::thread udpThread(&UDPserver::Listen, &udp, &tp, &s, &synch_variables, pipefd[0]);
 ```
 
+Next, we set up ```epoll``` to listen on appropriate socket and on SIGINT signal.
+When connection is accepted at UDP or TCP server, it adds a task to the thread pool queue(```TCPhandler::handleTCP```
+or ```UDPhandler::handleUDP```), which will be communicating
+with client afterward.
+
+Then each client handler will listen to its client socket and behave accordingly to the ```IPK24-CHAT protocol```.
+
+## Message broadcasting
+
+Each handler creates its own thread which listens to shared stack of user packet
+information ```std::stack<UserInfo> *s```.
+To synchronise all threads ```struct synch``` is used. It contains different mutexes, conditional variables and
+booleans.
+When we want to broadcast the message, we add to the stack new ```UserInfo``` struct and notify all threads. Each thread
+checks, that message wasn't sent from its parent thread, and send the message to its client.
+
+```
+void UDPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var,std::string &channel) 
+void TCPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var, std::string &channel)
+```
+
+## Packets for UDP
+
+Packet structures were used from IPK project1. Each struct inherits from ```struct Packets```. It
+implements ```void construct_message``` which writes bytes to uint8_t buf, that will be sent afterward.
+***
+# Testing
+
+I provided logs from terminal, where results of tests of basic chat functionality and some error cases can be seen.
+Client used is from IPK project 1.
+
+All tests were conducted under this environment - https://git.fit.vutbr.cz/NESFIT/dev-envs.git?dir=ipk#c
+
+* Attempt to join current channel
+
+![img.png](img/img.png)
+
+* Attempt to authenticate under existing username 
+
+![img_1.png](img/img_1.png)
+
+* Common communication process
+
+![img_2.png](img/img_2.png)
+
+## Bibliography
+
+* Ing. Daniel Dolejška, Ing. Vladimír Veselý Ph.D., IPK lectures, [04.07.2024]
+* A. S. Tanenbaum, "Computer Networks," 5th ed., Pearson, 2011, [04.15.2024]
+* GeeksforGeeks. (n.d.). different articles [04.08.2024]; URL: https://www.geeksforgeeks.org/
+* E. Bendersky. (2017) Concurrent servers [04.10.2024]; URL: https://eli.thegreenplace.net/2017/concurrent-servers-part-1-introduction/
