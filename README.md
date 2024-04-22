@@ -43,5 +43,28 @@ This is a simple chat application written in C++.
 ***
 
 # Implementation
-##### More detailed graphs can be found in doxy_doc generated using Doxygen on my repository
+##### More detailed graphs can be found in doxy_doc, generated using Doxygen, on my repository
+
+![uml_ipk2_light.png](img/uml_ipk2_light.png)
+
+Program begins by parsing command line arguments.
+
+```cpp
+ArgumentsHandler ah{};
+ah.get_args(argc, argv);
+```
+Then we initialize necessary values, and create instances of UDPserver and TCPserver.
+
+```cpp
+UDPserver udp{ah.get_retransmissions(), ah.get_timeout()};
+TCPserver tcp{};
+udp.Initialize(server_addr);
+tcp.Initialize(server_addr);
+```
+Then we start to wait for incoming connections, creating two threads.
+
+```cpp
+std::thread tcpThread(&TCPserver::Listen, &tcp, &tp, &s, &synch_variables, pipefd[0]);
+std::thread udpThread(&UDPserver::Listen, &udp, &tp, &s, &synch_variables, pipefd[0]);
+```
 
