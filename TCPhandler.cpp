@@ -69,6 +69,7 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
                 }
             }
         }
+
         if (synch_vars->finished == *busy) {
             synch_vars->finished = 0;
             synch_vars->ready = false;
