@@ -44,7 +44,6 @@ struct UserInfo {
     std::string channel;
     bool tcp;
 
-
     UserInfo(sockaddr_in c, uint8_t *m, int l, std::string name, bool t, int cs) : client(c), buf(m), length(l),
                                                                                    channel(std::move(name)), tcp(t),
                                                                                    tcp_socket(cs) {};

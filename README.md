@@ -43,3 +43,5 @@ This is a simple chat application written in C++.
 ***
 
 # Implementation
+##### More detailed graphs can be found in doxy_doc generated using Doxygen on my repository
+
