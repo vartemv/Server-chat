@@ -1,0 +1,9 @@
+<map id="read_queue" name="read_queue">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,42,104,67"/>
+<area shape="rect" id="Node000002" href="$classTCPhandler.html#a05e58c9b5f0600b1b4569469d06d5cae" title=" " alt="" coords="157,5,309,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,44,143,37,144,43,105,49"/>
+<area shape="rect" id="Node000004" href="$classTCPhandler.html#a07873f2e8f9e20f27c9d769a271df537" title=" " alt="" coords="152,70,315,95"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="105,60,139,65,138,70,104,65"/>
+<area shape="rect" id="Node000003" href="$classTCPhandler.html#ac746932aae3d9ac67d8a41908874e9ab" title=" " alt="" coords="363,13,525,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="310,23,349,23,349,28,310,28"/>
+</map>

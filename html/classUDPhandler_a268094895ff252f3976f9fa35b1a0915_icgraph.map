@@ -1,0 +1,13 @@
+<map id="UDPhandler::read_channel_name" name="UDPhandler::read_channel_name">
+<area shape="rect" id="Node000001" title=" " alt="" coords="939,13,1177,38"/>
+<area shape="rect" id="Node000002" href="$classUDPhandler.html#af84ff178226c5e2b88e33760ee50dd03" title=" " alt="" coords="732,5,891,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="925,28,891,28,891,23,925,23"/>
+<area shape="rect" id="Node000003" href="$classUDPhandler.html#abb602254c11e017de52dbd50d440f3bb" title=" " alt="" coords="521,5,684,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="718,28,684,28,684,23,718,23"/>
+<area shape="rect" id="Node000004" href="$classUDPhandler.html#a53588e77bb9947cf1c056641e9380135" title=" " alt="" coords="295,13,473,38"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="507,28,473,28,473,23,507,23"/>
+<area shape="rect" id="Node000005" href="$classUDPserver.html#a9413e283ccfc1d6c47d11fcb6779dc39" title=" " alt="" coords="108,13,247,38"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="281,28,247,28,247,23,281,23"/>
+<area shape="rect" id="Node000006" href="$main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="5,13,60,38"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="94,28,60,28,60,23,94,23"/>
+</map>

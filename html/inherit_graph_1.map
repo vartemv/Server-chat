@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$structPackets.html" title=" " alt="" coords="5,104,76,129"/>
+<area shape="rect" id="Node000001" href="$structAuthPackets.html" title=" " alt="" coords="135,5,236,31"/>
+<area shape="poly" id="edge1_Node000000_Node000001" title=" " alt="" coords="61,92,89,65,123,40,145,28,147,33,125,44,92,69,65,96"/>
+<area shape="rect" id="Node000002" href="$structConfirmPackets.html" title=" " alt="" coords="124,55,247,80"/>
+<area shape="poly" id="edge2_Node000000_Node000002" title=" " alt="" coords="88,98,146,78,148,83,90,103"/>
+<area shape="rect" id="Node000003" href="$structJoinPackets.html" title=" " alt="" coords="138,104,233,129"/>
+<area shape="poly" id="edge3_Node000000_Node000003" title=" " alt="" coords="90,114,138,114,138,119,90,119"/>
+<area shape="rect" id="Node000004" href="$structMsgPackets.html" title=" " alt="" coords="136,153,235,179"/>
+<area shape="poly" id="edge4_Node000000_Node000004" title=" " alt="" coords="90,130,148,151,146,156,88,135"/>
+<area shape="rect" id="Node000005" href="$structReplyPackets.html" title=" " alt="" coords="131,203,239,228"/>
+<area shape="poly" id="edge5_Node000000_Node000005" title=" " alt="" coords="65,138,93,163,125,188,149,200,147,205,123,192,89,167,62,141"/>
+</map>

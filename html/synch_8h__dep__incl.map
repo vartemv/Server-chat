@@ -1,0 +1,18 @@
+<map id="synch.h" name="synch.h">
+<area shape="rect" id="Node000001" title=" " alt="" coords="181,5,253,31"/>
+<area shape="rect" id="Node000002" href="$TCPhandler_8h.html" title=" " alt="" coords="97,79,203,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="198,43,163,80,159,77,194,39"/>
+<area shape="rect" id="Node000007" href="$UDPhandler_8h.html" title=" " alt="" coords="228,79,339,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="239,39,274,77,271,80,235,43"/>
+<area shape="rect" id="Node000003" href="$TCPhandler_8cpp.html" title=" " alt="" coords="5,152,127,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="128,115,81,154,78,150,124,111"/>
+<area shape="rect" id="Node000004" href="$server__classes_8h.html" title=" " alt="" coords="151,152,282,177"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="172,113,208,150,204,154,169,116"/>
+<area shape="rect" id="Node000005" href="$main_8cpp.html" title=" " alt="" coords="106,225,189,251"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="198,189,160,227,157,223,194,185"/>
+<area shape="rect" id="Node000006" href="$server__classes_8cpp.html" title=" " alt="" coords="213,225,359,251"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="239,185,277,223,273,227,236,189"/>
+<area shape="poly" id="edge8_Node000007_Node000004" title=" " alt="" coords="265,116,229,154,226,150,261,113"/>
+<area shape="rect" id="Node000008" href="$UDPhandler_8cpp.html" title=" " alt="" coords="306,152,431,177"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="309,110,356,150,353,154,306,115"/>
+</map>

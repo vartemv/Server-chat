@@ -1,0 +1,11 @@
+<map id="TCPhandler::send_buf" name="TCPhandler::send_buf">
+<area shape="rect" id="Node000001" title=" " alt="" coords="656,5,819,31"/>
+<area shape="rect" id="Node000002" href="$TCPhandler_8cpp.html#a258d695589cbf3c3a7f4a07ee829b8d0" title=" " alt="" coords="509,5,608,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="642,21,608,21,608,15,642,15"/>
+<area shape="rect" id="Node000003" href="$classTCPhandler.html#aa7477a6a089fa5fb4a840e290e723f51" title=" " alt="" coords="291,5,461,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="496,21,461,21,461,15,496,15"/>
+<area shape="rect" id="Node000004" href="$classTCPserver.html#a3bc90b871e106b96d6d95cdf15ae43c2" title=" " alt="" coords="108,5,243,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="277,21,243,21,243,15,277,15"/>
+<area shape="rect" id="Node000005" href="$main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="5,5,60,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="94,21,60,21,60,15,94,15"/>
+</map>

@@ -1,0 +1,12 @@
+<map id="UDPhandler::client_leaving" name="UDPhandler::client_leaving">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,35,148,75"/>
+<area shape="rect" id="Node000002" href="$classUDPhandler.html#aca55620e8c1df6d4ba073b4bf0ccb8b9" title=" " alt="" coords="196,5,344,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="148,41,182,36,183,41,149,46"/>
+<area shape="rect" id="Node000004" href="$classUDPhandler.html#a851c0b25cd4d46589ad46f628c44e3c1" title=" " alt="" coords="392,70,559,95"/>
+<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="149,57,378,73,378,79,148,62"/>
+<area shape="rect" id="Node000003" href="$structMsgPackets.html#a5c5d6689799550076ff6ae854f6bc513" title=" " alt="" coords="392,5,559,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="345,23,378,23,378,28,345,28"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="343,43,416,64,415,69,341,48"/>
+<area shape="rect" id="Node000005" href="$classUDPhandler.html#a1ef9887efde9d85ab784122eee3ddc3b" title=" " alt="" coords="607,63,752,103"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="559,80,593,80,593,85,559,85"/>
+</map>

@@ -1,0 +1,13 @@
+<map id="Packets" name="Packets">
+<area shape="rect" id="Node000001" title=" " alt="" coords="384,5,549,111"/>
+<area shape="rect" id="Node000002" href="$structAuthPackets.html" title=" " alt="" coords="5,159,171,284"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="372,89,279,121,184,161,172,167,170,162,182,156,277,116,370,84"/>
+<area shape="rect" id="Node000003" href="$structConfirmPackets.html" title=" " alt="" coords="195,179,360,264"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="397,122,328,181,324,177,394,118"/>
+<area shape="rect" id="Node000004" href="$structJoinPackets.html" title=" " alt="" coords="384,169,549,274"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="469,125,469,168,464,168,464,125"/>
+<area shape="rect" id="Node000005" href="$structMsgPackets.html" title=" " alt="" coords="573,169,739,274"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="540,118,597,166,593,170,536,122"/>
+<area shape="rect" id="Node000006" href="$structReplyPackets.html" title=" " alt="" coords="763,159,928,284"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="563,84,656,116,752,156,764,162,761,167,750,161,654,121,562,89"/>
+</map>

@@ -1,0 +1,27 @@
+<map id="UDPhandler::waiting_for_confirm" name="UDPhandler::waiting_for_confirm">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1191,129,1345,169"/>
+<area shape="rect" id="Node000002" href="$classUDPhandler.html#a6ead2d2c0f457408c971d19a9f565fca" title=" " alt="" coords="939,107,1143,132"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1177,140,1139,135,1139,129,1178,134"/>
+<area shape="rect" id="Node000009" href="$classUDPhandler.html#ae881fa4495579ce231850e6d7cdae018" title=" " alt="" coords="951,164,1130,189"/>
+<area shape="poly" id="edge12_Node000001_Node000009" title=" " alt="" coords="1178,162,1131,168,1130,163,1177,157"/>
+<area shape="rect" id="Node000003" href="$classUDPhandler.html#abb602254c11e017de52dbd50d440f3bb" title=" " alt="" coords="521,106,684,146"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="925,124,684,127,684,122,925,118"/>
+<area shape="rect" id="Node000004" href="$classUDPhandler.html#a53588e77bb9947cf1c056641e9380135" title=" " alt="" coords="295,85,473,111"/>
+<area shape="poly" id="edge6_Node000002_Node000004" title=" " alt="" coords="925,110,890,107,706,96,521,97,474,98,473,92,521,91,706,91,891,102,925,105"/>
+<area shape="rect" id="Node000007" href="$UDPhandler_8cpp.html#a6996bff9d7fe890b612dcc94d8c21d58" title=" " alt="" coords="553,5,652,31"/>
+<area shape="poly" id="edge7_Node000002_Node000007" title=" " alt="" coords="1004,102,952,76,890,53,827,38,762,29,652,21,652,16,763,24,828,33,891,47,954,71,1007,97"/>
+<area shape="rect" id="Node000008" href="$classUDPhandler.html#a917cd1436b4cae4c40a04fd0e32a625c" title=" " alt="" coords="732,157,891,197"/>
+<area shape="poly" id="edge9_Node000002_Node000008" title=" " alt="" coords="977,138,892,159,890,154,975,133"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="507,116,473,112,474,107,508,111"/>
+<area shape="rect" id="Node000005" href="$classUDPserver.html#a9413e283ccfc1d6c47d11fcb6779dc39" title=" " alt="" coords="108,85,247,111"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="281,101,247,101,247,95,281,95"/>
+<area shape="rect" id="Node000006" href="$main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97" title=" " alt="" coords="5,85,60,111"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="94,101,60,101,60,95,94,95"/>
+<area shape="poly" id="edge8_Node000007_Node000004" title=" " alt="" coords="556,38,421,88,419,83,554,33"/>
+<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="718,157,684,148,685,143,719,152"/>
+<area shape="poly" id="edge11_Node000008_Node000004" title=" " alt="" coords="718,182,622,177,571,170,521,161,457,138,406,113,409,108,460,133,522,155,572,165,623,171,718,176"/>
+<area shape="poly" id="edge13_Node000009_Node000008" title=" " alt="" coords="937,179,891,179,891,174,937,174"/>
+<area shape="rect" id="Node000010" href="$classUDPhandler.html#af84ff178226c5e2b88e33760ee50dd03" title=" " alt="" coords="732,221,891,261"/>
+<area shape="poly" id="edge14_Node000009_Node000010" title=" " alt="" coords="982,196,885,223,883,218,980,191"/>
+<area shape="poly" id="edge15_Node000010_Node000003" title=" " alt="" coords="744,217,731,211,677,179,631,148,634,144,680,175,733,206,746,213"/>
+</map>

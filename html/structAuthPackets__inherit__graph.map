@@ -1,0 +1,5 @@
+<map id="AuthPackets" name="AuthPackets">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,159,171,284"/>
+<area shape="rect" id="Node000002" href="$structPackets.html" title=" " alt="" coords="5,5,171,111"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,124,91,158,85,158,85,124"/>
+</map>

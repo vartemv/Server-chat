@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['chagelog_2emd_0',['CHAGELOG.md',['../CHAGELOG_8md.html',1,'']]],
+  ['change_5fdisplay_5fname_1',['change_display_name',['../classUDPhandler.html#aadb61a06474b640899e8db3ca2152e49',1,'UDPhandler']]],
+  ['channel_2',['channel',['../structUserInfo.html#aeeb1399266cd860fa17bf4ac7a02b4fa',1,'UserInfo']]],
+  ['channel_5fname_3',['channel_name',['../classTCPhandler.html#a2c5f79618ea8072f6654ea85ad8ca78e',1,'TCPhandler::channel_name'],['../classUDPhandler.html#a8f0c7c28175f299ec18b38ec062b2642',1,'UDPhandler::channel_name']]],
+  ['channelid_4',['ChannelID',['../structJoinPackets.html#adf5171149a35dce1ce322e76acfdef13',1,'JoinPackets']]],
+  ['chat_5',['IPK - first project - Client-chat',['../md_README.html',1,'']]],
+  ['client_6',['client',['../structUserInfo.html#a30d8a671dec58d8d86f9f44da8e82b34',1,'UserInfo']]],
+  ['client_20chat_7',['IPK - first project - Client-chat',['../md_README.html',1,'']]],
+  ['client_5faddr_8',['client_addr',['../classTCPhandler.html#a3801c723cf4a618f723782abfaa38cb3',1,'TCPhandler::client_addr'],['../classUDPhandler.html#a0a772890fcf582976b1c5fd86558c18c',1,'UDPhandler::client_addr']]],
+  ['client_5fleaving_9',['client_leaving',['../classUDPhandler.html#a3620f284968893926f9147a61d067477',1,'UDPhandler']]],
+  ['client_5fsocket_10',['client_socket',['../classTCPhandler.html#ae380762c7e9b103f8eda55a5682022c3',1,'TCPhandler::client_socket'],['../classUDPhandler.html#a3172245e6065afcbf2d194da92adc5db',1,'UDPhandler::client_socket']]],
+  ['condition_5fvariable_11',['condition_variable',['../classThreadPool.html#a1fc7a7c90f9651dc3b7b17338387406c',1,'ThreadPool']]],
+  ['confirmpacket_12',['ConfirmPacket',['../packets_8h.html#a1783a9569fbc731aac46861f3bddbece',1,'packets.h']]],
+  ['confirmpackets_13',['ConfirmPackets',['../structConfirmPackets.html',1,'ConfirmPackets'],['../structConfirmPackets.html#a416b877d04ecbb156981ffcf41b3e70f',1,'ConfirmPackets::ConfirmPackets()']]],
+  ['construct_5fmessage_14',['construct_message',['../structPackets.html#a9d1f8a5462eb0dbbdda651648e2d0aee',1,'Packets::construct_message()'],['../structConfirmPackets.html#a29f7da6f79fb50bd00a5f6f8a4f3c2cf',1,'ConfirmPackets::construct_message()'],['../structJoinPackets.html#ab58aad88f7b9fde0c3246b1b65c73441',1,'JoinPackets::construct_message()'],['../structMsgPackets.html#a5c5d6689799550076ff6ae854f6bc513',1,'MsgPackets::construct_message()'],['../structAuthPackets.html#aee8106828459ccd6e52752a9c5e6e0f6',1,'AuthPackets::construct_message()'],['../structReplyPackets.html#aad07a7a886f81df9db4cfcbebfc5d407',1,'ReplyPackets::construct_message()']]],
+  ['convert_5ffrom_5ftcp_15',['convert_from_tcp',['../classUDPhandler.html#a759c1204a03196d4ea89c2ad7ac968e0',1,'UDPhandler']]],
+  ['convert_5ffrom_5fudp_16',['convert_from_udp',['../classTCPhandler.html#a05e58c9b5f0600b1b4569469d06d5cae',1,'TCPhandler']]],
+  ['create_5fbye_17',['create_bye',['../classTCPhandler.html#aaeb1a74203c60d2ec6fac1325ed91839',1,'TCPhandler::create_bye()'],['../classUDPhandler.html#a2e1f681d3c62692ef47cb90d480e1e2e',1,'UDPhandler::create_bye()']]],
+  ['create_5fmessage_18',['create_message',['../classTCPhandler.html#a1790dd6c899bbed00258ab9b6576faec',1,'TCPhandler::create_message()'],['../classUDPhandler.html#aca55620e8c1df6d4ba073b4bf0ccb8b9',1,'UDPhandler::create_message()']]],
+  ['create_5freply_19',['create_reply',['../classTCPhandler.html#af4c42886ee244e2378a001fe58bc6912',1,'TCPhandler']]],
+  ['cv_20',['cv',['../structsynch.html#a58459dfa65ba5f33644d1df9dc014a3f',1,'synch']]],
+  ['cv2_21',['cv2',['../structsynch.html#a2269e330ad9d68bd1bd391aa46a4078f',1,'synch']]]
+];

@@ -1,0 +1,12 @@
+<map id="UDPhandler::convert_from_tcp" name="UDPhandler::convert_from_tcp">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,35,161,75"/>
+<area shape="rect" id="Node000002" href="$classUDPhandler.html#aca55620e8c1df6d4ba073b4bf0ccb8b9" title=" " alt="" coords="209,5,357,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="161,41,195,36,196,41,162,46"/>
+<area shape="rect" id="Node000004" href="$classUDPhandler.html#a851c0b25cd4d46589ad46f628c44e3c1" title=" " alt="" coords="405,70,572,95"/>
+<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="162,57,391,73,391,79,161,63"/>
+<area shape="rect" id="Node000003" href="$structMsgPackets.html#a5c5d6689799550076ff6ae854f6bc513" title=" " alt="" coords="405,5,572,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="358,23,391,23,391,28,358,28"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="356,43,430,64,428,69,355,48"/>
+<area shape="rect" id="Node000005" href="$classUDPhandler.html#a1ef9887efde9d85ab784122eee3ddc3b" title=" " alt="" coords="620,63,765,103"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="572,80,606,80,606,85,572,85"/>
+</map>
