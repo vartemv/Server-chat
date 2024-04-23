@@ -248,6 +248,7 @@ void UDPhandler::message(uint8_t *buf, int message_length, std::stack<UserInfo> 
     if (!this->buffer_validation(buf, message_length, 3, 2, 2, 20, 1400))
         valid_message = false;
 
+
     if (valid_message) {
         {
             std::lock_guard<std::mutex> lock(synch_var->mtx);
