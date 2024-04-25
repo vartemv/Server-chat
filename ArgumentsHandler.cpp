@@ -9,7 +9,7 @@ void ArgumentsHandler::print_help() {
     std::cout << R"(|Argument | Default values | Type
 ____________________________________________________________________________________________________________
 | -l      | 127.0.0.1      | IP address                | Server listening IP address for welcome sockets    |
-| -p      | 47356          | uint16                    | Server listening port for welcome sockets          |
+| -p      | 4567           | uint16                    | Server listening port for welcome sockets          |
 | -d      | 500            | uint16                    | UDP confirmation timeout                           |
 | -r      | 3              | uint8                     | Maximum number of UDP retransmissions              |
 | -n      | 20             | uint16                    | Maximum number of threads in the thread pool       |
@@ -20,7 +20,7 @@ ________________________________________________________________________________
 void ArgumentsHandler::get_args(int argc, char **argv) {
     this->timeout = 500;
     this->retransmissions = 3;
-    this->port = 47356;
+    this->port = 4567;
     this->address = new char[13];
     this->number_of_threads = 20;
     strcpy(address, "127.0.0.1");
