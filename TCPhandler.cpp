@@ -84,32 +84,86 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
     }
 }
 
+bool end_of_the_message(uint8_t *buf, uint8_t *storage, uint8_t *final, size_t size, size_t *storage_size) {
+    bool found = false;
+
+    //Looking for /r/n sequence at some place of our bytes array. If it is found than we should have complete message
+    // in storage + buf[0:counter]
+    int counter = 0;
+    for (; counter < size - 1; ++counter) {
+        if (buf[counter] == 0x0d && buf[counter + 1] == 0x0a) {
+            found = true;
+            break;
+        }
+    }
+
+    //Add array to the storage
+    for (size_t j = *storage_size; j < *storage_size + size; ++j) {
+        storage[j] = buf[j - *storage_size];
+    }
+
+    //If /r/n is indeed in our storage
+    if (found) {
+        //Copy complete message from storage to the array which will be next processed
+        int i_f = 0;
+        std::cout << *storage_size << std::endl;
+        std::cout << counter << std::endl;
+        for (; i_f < *storage_size + counter; i_f++) {
+            final[i_f] = storage[i_f];
+        }
+        final[i_f] = '\r';
+        final[i_f + 1] = '\n';
+
+        // We have to delete message that was copied to final array, as we don't have to save it anymore
+        if (counter + 2 == size) {
+            // If all storage contents is one complete message - empty all array
+            std::memset(storage, 0, sizeof(*storage));
+            *storage_size = 0;
+        } else {
+            // If there is some parts of the next message - just shift the array by {*storage_size + counter} to the left
+            for (int i = *storage_size + counter; i < *storage_size + size; i++) {
+                storage[i - *storage_size + counter] = storage[i];
+            }
+            // -2 to remove /r/n
+            *storage_size = size - counter - 2;
+        }
+    } else {
+        // If message is not complete just increase the size of the array
+        *storage_size += size;
+    }
+    return found;
+}
+
 int TCPhandler::listening_for_incoming_connection(uint8_t *buf, int len) {
 
-    int event_count = epoll_wait(this->epoll_fd, this->events, 2, -1);
+    while (true) {
+        uint8_t temp[1024];
+        int event_count = epoll_wait(this->epoll_fd, this->events, 2, -1);
 
-    if (event_count == -1) {
-        perror("epoll_wait");
-        close(this->epoll_fd);
-        exit(EXIT_FAILURE);
-    } else if (event_count > 0) {
-        for (int j = 0; j < event_count; j++) {
-            if (events[j].data.fd == this->client_socket) { // check if EPOLLIN event has occurred
-                int n = recv(this->client_socket, buf, len, 0);
-                if (n == -1) {
-                    std::cerr << "recvfrom failed. errno: " << errno << '\n';
-                    continue;
-                } else if (n == 0) {
-                    return 0;
-                } else if (n > 0) {
-                    return n;
+        if (event_count == -1) {
+            perror("epoll_wait");
+            close(this->epoll_fd);
+            exit(EXIT_FAILURE);
+        } else if (event_count > 0) {
+            for (int j = 0; j < event_count; j++) {
+                if (events[j].data.fd == this->client_socket) { // check if EPOLLIN event has occurred
+                    int n = recv(this->client_socket, temp, 5012, 0);
+                    if (n == -1) {
+                        std::cerr << "recvfrom failed. errno: " << errno << '\n';
+                        continue;
+                    } else if (n == 0) {
+                        return 0;
+                    } else if (n > 0) {
+                        if (end_of_the_message(temp, this->storage, buf, n, &this->storage_capacity)) {
+                            return n;
+                        }
+                    }
+                } else {
+                    return -1;
                 }
-            } else {
-                return -1;
             }
         }
     }
-    return 0;
 }
 
 bool TCPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var) {

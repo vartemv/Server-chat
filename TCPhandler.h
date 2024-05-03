@@ -18,6 +18,8 @@ public:
     sockaddr_in client_addr;
     bool auth;
     std::string user_n;
+    uint8_t storage[5012];
+    size_t storage_capacity = 0;
 
     TCPhandler(int s, sockaddr_in c, int kill) {
         this->channel_name = "general";
