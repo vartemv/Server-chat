@@ -87,70 +87,79 @@ void read_queue(std::stack<UserInfo> *s, bool *terminate, synch *synch_vars, int
 }
 
 bool UDPhandler::decipher_the_message(uint8_t *buf, int length, std::stack<UserInfo> *s, synch *synch_var) {
-    if (!this->auth) {
-        if (buf[0] != 0x02) {
-            if (buf[0] != 0xFF) {
-                if (buf[0] != 0xFE) {
-                    uint8_t buf_int[1024];
-                    std::string message = "You should log-in before doing anything else";
-                    std::string name = "Server";
-                    int length = this->create_message(buf_int, message, false, name);
-                    this->send_message(buf_int, length, false);
-                    return true;
+    if (std::find(this->messages_id.begin(), this->messages_id.end(), read_packet_id(buf)) == this->messages_id.end()) {
+        this->messages_id.push_back(read_packet_id(buf));
+        if (!this->auth) {
+            if (buf[0] != 0x02) {
+                if (buf[0] != 0xFF) {
+                    if (buf[0] != 0xFE) {
+                        uint8_t buf_int[1024];
+                        std::string message = "You should log-in before doing anything else";
+                        std::string name = "Server";
+                        int length = this->create_message(buf_int, message, false, name);
+                        this->send_message(buf_int, length, false);
+                        return true;
+                    }
                 }
             }
         }
-    }
 
-    switch (buf[0]) {
-        case 0x00://CONFIRM
-            break;
-        case 0x02://AUTH
-            logger(this->client_addr, "AUTH", "RECV");
-            send_confirm(buf);
-            if (!this->auth) {
-                respond_to_auth(buf, length, s, synch_var);
-            } else {
-                uint8_t buf_err[1024];
-                std::string message = "Already authed";
+        switch (buf[0]) {
+            case 0x00://CONFIRM
+                break;
+            case 0x02://AUTH
+                logger(this->client_addr, "AUTH", "RECV");
+                send_confirm(buf);
+                if (!this->auth) {
+                    respond_to_auth(buf, length, s, synch_var);
+                } else {
+                    uint8_t buf_err[1024];
+                    std::string message = "Already authed";
+                    std::string name = "Server";
+                    int length_err = this->create_message(buf_err, message, true, name);
+                    this->send_message(buf_err, length_err, false);
+                }
+                break;
+            case 0x03://JOIN
+                logger(this->client_addr, "JOIN", "RECV");
+                send_confirm(buf);
+                respond_to_join(buf, length, s, synch_var);
+                break;
+            case 0x04://MSG
+                logger(this->client_addr, "MSG", "RECV");
+                send_confirm(buf);
+                this->message(buf, length, s, synch_var, this->channel_name);
+                break;
+            case 0xFF://BYE
+                if (this->auth) {
+                    this->client_leaving(s, synch_var);
+                }
+                logger(this->client_addr, "BYE", "RECV");
+                send_confirm(buf);
+                return false;
+            case 0xFE://ERR
+                if (this->auth) {
+                    this->client_leaving(s, synch_var);
+                }
+                logger(this->client_addr, "ERR", "RECV");
+                send_confirm(buf);
+                return false;
+            default:
+                uint8_t buf[1024];
+                std::string message = "Unknown instruction";
                 std::string name = "Server";
-                int length_err = this->create_message(buf_err, message, true, name);
-                this->send_message(buf_err, length_err, false);
-            }
-            break;
-        case 0x03://JOIN
-            logger(this->client_addr, "JOIN", "RECV");
-            send_confirm(buf);
-            respond_to_join(buf, length, s, synch_var);
-            break;
-        case 0x04://MSG
-            logger(this->client_addr, "MSG", "RECV");
-            send_confirm(buf);
-            this->message(buf, length, s, synch_var, this->channel_name);
-            break;
-        case 0xFF://BYE
-            if (this->auth) {
-                this->client_leaving(s, synch_var);
-            }
-            logger(this->client_addr, "BYE", "RECV");
-            send_confirm(buf);
-            return false;
-        case 0xFE://ERR
-            if (this->auth) {
-                this->client_leaving(s, synch_var);
-            }
-            logger(this->client_addr, "ERR", "RECV");
-            send_confirm(buf);
-            return false;
-        default:
-            uint8_t buf[1024];
-            std::string message = "Unknown instruction";
-            std::string name = "Server";
-            int length_err = this->create_message(buf, message, true, name);
-            this->send_message(buf, length_err, false);
-            return false;
+                int length_err = this->create_message(buf, message, true, name);
+                this->send_message(buf, length_err, false);
+                return false;
+        }
+        return true;
+    }else{
+        send_confirm(buf);
+        logger(this->client_addr, "CONFIRM", "SENT");
+        if(this->messages_id.size() == 10)
+            this->messages_id.erase(this->messages_id.begin(), this->messages_id.begin()+9);
+        return true;
     }
-    return true;
 }
 
 int UDPhandler::respond_to_auth(uint8_t *buf, int message_length, std::stack<UserInfo> *s, synch *synch_var) {
@@ -211,7 +220,7 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
         this->change_display_name(buf, true);
 
         std::string new_channel = this->read_channel_name(buf);
-        if(new_channel != this->channel_name) {
+        if (new_channel != this->channel_name) {
             std::string success = "Join is successful";
             send_reply(buf, success, true);
             std::stringstream ss;
@@ -231,7 +240,7 @@ void UDPhandler::respond_to_join(uint8_t *buf, int message_length, std::stack<Us
             std::string message_new = joined.str();
             length = this->create_message(buf_message, message_new, false, name);
             this->message(buf_message, length, s, synch_var, this->channel_name);
-        }else{
+        } else {
             std::string failure = "Join isn't successful";
             send_reply(buf, failure, false);
         }

@@ -34,6 +34,7 @@ public:
     std::string display_name;
     std::string channel_name;
     std::string user_n;
+    std::vector<int> messages_id;
 
     UDPhandler(int ret, int t, sockaddr_in client, int kill) {
         this->retransmissions = ret;
